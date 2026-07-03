@@ -36,3 +36,9 @@ logs/
 # IDE
 .vscode/
 .idea/
+
+# SSL certificates
+nginx/certs/
+*.key
+*.pem
+*.crt
