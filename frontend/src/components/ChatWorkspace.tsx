@@ -3,6 +3,7 @@ import { Character, Message, UserProfile } from '../types';
 import LucideIcon from './LucideIcon';
 import { getActiveModelServiceConfig } from '../modelService';
 import {FeatureSettings} from '../featureSettings';
+import {useTtsPlayer} from '../tts/useTtsPlayer';
 
 interface ChatWorkspaceProps {
   character?: Character;
@@ -82,46 +83,29 @@ export default function ChatWorkspace({
   const [isRecording, setIsRecording] = useState(false);
 
   const recognitionRef = useRef<any>(null);
-  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
-  const lastAssistantMessageIdRef = useRef<string>(
-    [...messages].reverse().find(message => message.role === 'assistant' && !message.id.endsWith('-greeting'))?.id || '',
-  );
-
-  const stopSpeaking = () => {
-    window.speechSynthesis?.cancel();
-    setSpeakingMessageId(null);
-  };
+  const tts = useTtsPlayer(featureSettings);
+  const wasLoadingRef = useRef(isLoading);
+  const assistantBeforeGenerationRef = useRef<string>('');
 
   const speakMessage = (message: Message) => {
-    if (!featureSettings.voicePlaybackEnabled || !('speechSynthesis' in window)) return;
-    if (speakingMessageId === message.id) {
-      stopSpeaking();
-      return;
-    }
-    window.speechSynthesis.cancel();
-    const text = message.content.replace(/\*([^*]+)\*/g, '$1').replace(/\s+/g, ' ').trim();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'zh-CN';
-    utterance.rate = featureSettings.speechRate;
-    utterance.pitch = featureSettings.speechPitch;
-    utterance.onend = () => setSpeakingMessageId(null);
-    utterance.onerror = () => setSpeakingMessageId(null);
-    setSpeakingMessageId(message.id);
-    window.speechSynthesis.speak(utterance);
+    if (tts.currentId === message.id) tts.stop();
+    else tts.play(message.id, message.content);
   };
 
   useEffect(() => {
     const latest = [...messages].reverse().find(message => message.role === 'assistant' && !message.id.endsWith('-greeting'));
-    if (!latest) return;
-    if (latest.id !== lastAssistantMessageIdRef.current) {
-      lastAssistantMessageIdRef.current = latest.id;
-      if (featureSettings.voicePlaybackEnabled && featureSettings.autoPlayAssistantReplies) speakMessage(latest);
+    if (!wasLoadingRef.current && isLoading) {
+      assistantBeforeGenerationRef.current = latest?.id || '';
     }
-  }, [messages]);
+    const generationCompleted = wasLoadingRef.current && !isLoading;
+    wasLoadingRef.current = isLoading;
+    if (!generationCompleted) return;
+    if (!latest || latest.id === assistantBeforeGenerationRef.current) return;
+    if (featureSettings.voicePlaybackEnabled && featureSettings.autoPlayAssistantReplies) speakMessage(latest);
+  }, [messages, isLoading]);
 
   useEffect(() => {
-    if (!featureSettings.voicePlaybackEnabled) stopSpeaking();
-    return () => window.speechSynthesis?.cancel();
+    if (!featureSettings.voicePlaybackEnabled) tts.stop();
   }, [featureSettings.voicePlaybackEnabled]);
 
   // Message being edited
@@ -564,12 +548,18 @@ export default function ChatWorkspace({
                           {isAssistant && featureSettings.voicePlaybackEnabled && (
                             <button
                               onClick={() => speakMessage(msg)}
-                              className={speakingMessageId === msg.id ? 'text-cyan-400' : 'hover:text-cyan-400 transition-colors'}
-                              title={speakingMessageId === msg.id ? '停止播放' : '播放 AI 回复'}
-                              aria-label={speakingMessageId === msg.id ? '停止播放' : '播放 AI 回复'}
+                              className={tts.currentId === msg.id ? 'text-cyan-400' : 'hover:text-cyan-400 transition-colors'}
+                              title={tts.currentId === msg.id ? '停止播放' : '播放 AI 回复'}
+                              aria-label={tts.currentId === msg.id ? '停止播放' : '播放 AI 回复'}
                               id={`speak-btn-${msg.id}`}
                             >
-                              <LucideIcon name={speakingMessageId === msg.id ? 'VolumeX' : 'Volume2'} size={12} />
+                              <LucideIcon name={tts.currentId === msg.id ? 'VolumeX' : 'Volume2'} size={12} />
+                            </button>
+                          )}
+
+                          {isAssistant && tts.currentId === msg.id && (
+                            <button onClick={tts.togglePause} className="text-cyan-400 hover:text-cyan-300" title={tts.paused ? '继续播放' : '暂停播放'} aria-label={tts.paused ? '继续播放' : '暂停播放'}>
+                              <LucideIcon name={tts.paused ? 'Play' : 'Pause'} size={12} />
                             </button>
                           )}
 

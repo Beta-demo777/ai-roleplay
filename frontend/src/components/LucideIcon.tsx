@@ -34,6 +34,8 @@ import {
   Heart,
   Volume2,
   VolumeX,
+  Play,
+  Pause,
   Award,
   Info
 } from 'lucide-react';
@@ -114,6 +116,10 @@ export default function LucideIcon({ name, className = '', size = 20 }: LucideIc
       return <Volume2 className={className} size={size} />;
     case 'VolumeX':
       return <VolumeX className={className} size={size} />;
+    case 'Play':
+      return <Play className={className} size={size} />;
+    case 'Pause':
+      return <Pause className={className} size={size} />;
     case 'Award':
       return <Award className={className} size={size} />;
     case 'Info':

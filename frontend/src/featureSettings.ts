@@ -5,6 +5,9 @@ export interface FeatureSettings {
   autoPlayAssistantReplies: boolean;
   speechRate: number;
   speechPitch: number;
+  speechVolume: number;
+  voiceURI: string;
+  ttsTextMode: 'full' | 'dialogue-only';
 }
 
 export const DEFAULT_FEATURE_SETTINGS: FeatureSettings = {
@@ -12,6 +15,9 @@ export const DEFAULT_FEATURE_SETTINGS: FeatureSettings = {
   autoPlayAssistantReplies: false,
   speechRate: 1,
   speechPitch: 1,
+  speechVolume: 1,
+  voiceURI: '',
+  ttsTextMode: 'full',
 };
 
 export function loadFeatureSettings(): FeatureSettings {
