@@ -1,13 +1,14 @@
 from fastapi import FastAPI
 from app.db.session import test_db_connection
 from app.core.redis import redis_client
-from app.api import state_router
+from app.api import auth_router, state_router
 
 app = FastAPI(
     title="AI Roleplay API",
     version="0.1.0"
 )
 
+app.include_router(auth_router)
 app.include_router(state_router)
 
 

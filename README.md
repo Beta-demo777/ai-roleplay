@@ -47,6 +47,10 @@ PostgreSQL 数据保存在 `docker/postgresql/data/`，Redis 数据保存在 Doc
 
 AI 角色、用户资料、对话线程和消息由 FastAPI 持久化到 PostgreSQL。首次升级到数据库版本时，前端会自动将当前浏览器中的本地数据导入数据库；之后数据库作为主数据源，localStorage 仅作为后端暂时不可用时的本地缓存。数据库迁移由 Alembic 管理，并在后端容器启动前自动执行。
 
+## 启用访问密码
+
+本地开发默认不要求登录。公开部署时，在 `.env` 中设置 `AUTH_ENABLED=true`，填写 `APP_ADMIN_PASSWORD`，并用 `openssl rand -hex 32` 生成 `APP_SECRET_KEY`。HTTPS 部署同时设置 `AUTH_COOKIE_SECURE=true`。启用后，角色、资料和对话状态 API 只接受已登录浏览器通过 HttpOnly Cookie 访问。
+
 ## 单独开发前端
 
 ```bash

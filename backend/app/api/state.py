@@ -5,6 +5,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.core.auth import require_auth
 from app.models import Character, ChatMessage, ChatThread, UserProfile
 from app.schemas.state import (
     AppStateSchema,
@@ -14,7 +15,11 @@ from app.schemas.state import (
     UserProfileSchema,
 )
 
-router = APIRouter(prefix="/api/v1/state", tags=["state"])
+router = APIRouter(
+    prefix="/api/v1/state",
+    tags=["state"],
+    dependencies=[Depends(require_auth)],
+)
 
 
 def serialize_profile(profile: UserProfile) -> UserProfileSchema:
