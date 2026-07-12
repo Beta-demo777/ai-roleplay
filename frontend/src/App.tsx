@@ -1243,6 +1243,7 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
           onChange={handleFeatureSettingsChange}
           middlePanelWidth={middlePanelWidth}
           onMiddlePanelResizeStart={handleMiddlePanelResizeStart}
+          characters={allCharacters}
         />
       )}
 

@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {Gauge, Play, Puzzle, Square, Volume2} from 'lucide-react';
-import {FeatureSettings} from '../featureSettings';
+import {CharacterVoiceSettings, FeatureSettings, resolveCharacterVoiceSettings} from '../featureSettings';
+import {Character} from '../types';
 import MiddlePanelResizeHandle from './MiddlePanelResizeHandle';
 import {useTtsPlayer} from '../tts/useTtsPlayer';
 
@@ -9,13 +10,33 @@ interface ExtensionsDashboardProps {
   onChange: (settings: FeatureSettings) => void;
   middlePanelWidth: number;
   onMiddlePanelResizeStart: (event: React.PointerEvent<HTMLDivElement>) => void;
+  characters: Character[];
 }
 
-export default function ExtensionsDashboard({settings, onChange, middlePanelWidth, onMiddlePanelResizeStart}: ExtensionsDashboardProps) {
+export default function ExtensionsDashboard({settings, onChange, middlePanelWidth, onMiddlePanelResizeStart, characters}: ExtensionsDashboardProps) {
   const supported = typeof window !== 'undefined' && 'speechSynthesis' in window;
   const update = <K extends keyof FeatureSettings>(key: K, value: FeatureSettings[K]) => onChange({...settings, [key]: value});
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const preview = useTtsPlayer(settings);
+  const [selectedCharacterId, setSelectedCharacterId] = useState(characters[0]?.id || '');
+  const effectivePreviewSettings = resolveCharacterVoiceSettings(settings, selectedCharacterId);
+  const preview = useTtsPlayer(effectivePreviewSettings);
+  const selectedCharacter = characters.find(character => character.id === selectedCharacterId);
+  const characterVoice = settings.characterVoices[selectedCharacterId];
+  const customEnabled = characterVoice?.useCustom ?? false;
+
+  const defaultCharacterVoice = (): CharacterVoiceSettings => ({
+    useCustom: true,
+    autoPlayAssistantReplies: settings.autoPlayAssistantReplies,
+    speechRate: settings.speechRate,
+    speechPitch: settings.speechPitch,
+    speechVolume: settings.speechVolume,
+    voiceURI: settings.voiceURI,
+  });
+
+  const updateCharacterVoice = <K extends keyof CharacterVoiceSettings>(key: K, value: CharacterVoiceSettings[K]) => {
+    const current = characterVoice || defaultCharacterVoice();
+    onChange({...settings, characterVoices: {...settings.characterVoices, [selectedCharacterId]: {...current, [key]: value}}});
+  };
 
   useEffect(() => {
     if (!supported) return;
@@ -24,6 +45,12 @@ export default function ExtensionsDashboard({settings, onChange, middlePanelWidt
     window.speechSynthesis.addEventListener('voiceschanged', refresh);
     return () => window.speechSynthesis.removeEventListener('voiceschanged', refresh);
   }, [supported]);
+
+  useEffect(() => {
+    if (!characters.some(character => character.id === selectedCharacterId)) {
+      setSelectedCharacterId(characters[0]?.id || '');
+    }
+  }, [characters, selectedCharacterId]);
 
   return (
     <div className="flex h-full flex-1 overflow-hidden bg-[#1e1e1e] text-zinc-100" id="extensions-dashboard-root">
@@ -76,6 +103,37 @@ export default function ExtensionsDashboard({settings, onChange, middlePanelWidt
             <button type="button" disabled={!settings.voicePlaybackEnabled} onClick={() => preview.currentId ? preview.stop() : preview.play('preview', '欢迎来到 Aura，这是当前语音效果的试听内容。')} className="flex items-center gap-2 rounded-lg border border-cyan-500/20 px-4 py-2 text-xs text-cyan-400 hover:bg-cyan-500/10 disabled:cursor-not-allowed disabled:opacity-40">
               {preview.currentId ? <Square size={12} /> : <Play size={12} />}{preview.currentId ? '停止试听' : '试听当前声音'}
             </button>
+          </section>
+
+          <section className={`space-y-5 rounded-2xl border border-zinc-800 bg-zinc-950/30 p-5 ${!settings.voicePlaybackEnabled ? 'opacity-50' : ''}`}>
+            <div>
+              <p className="text-xs font-semibold text-zinc-300">角色专属声音</p>
+              <p className="mt-1 text-[11px] leading-5 text-zinc-500">为不同角色覆盖全局声音与播放参数。</p>
+            </div>
+            <label className="block space-y-2 text-xs text-zinc-400">
+              <span>选择角色</span>
+              <select value={selectedCharacterId} disabled={!settings.voicePlaybackEnabled || characters.length === 0} onChange={event => setSelectedCharacterId(event.target.value)} className="field-input disabled:cursor-not-allowed">
+                {characters.length === 0 && <option value="">暂无角色</option>}
+                {characters.map(character => <option key={character.id} value={character.id}>{character.name}</option>)}
+              </select>
+            </label>
+            {selectedCharacter && (
+              <>
+                <SettingRow title={`为「${selectedCharacter.name}」使用专属配置`} description="关闭时，该角色始终继承上方的全局朗读参数。">
+                  <Toggle checked={customEnabled} disabled={!settings.voicePlaybackEnabled} onChange={value => updateCharacterVoice('useCustom', value)} />
+                </SettingRow>
+                <div className={`space-y-5 ${!customEnabled ? 'pointer-events-none opacity-40' : ''}`}>
+                  <SettingRow title="自动播放该角色的新回复" description="仅覆盖当前角色的自动播放行为。">
+                    <Toggle checked={characterVoice?.autoPlayAssistantReplies ?? settings.autoPlayAssistantReplies} disabled={!customEnabled} onChange={value => updateCharacterVoice('autoPlayAssistantReplies', value)} />
+                  </SettingRow>
+                  <Slider label="角色语速" value={characterVoice?.speechRate ?? settings.speechRate} min={0.6} max={1.6} step={0.1} disabled={!customEnabled} onChange={value => updateCharacterVoice('speechRate', value)} />
+                  <Slider label="角色音调" value={characterVoice?.speechPitch ?? settings.speechPitch} min={0.5} max={1.5} step={0.1} disabled={!customEnabled} onChange={value => updateCharacterVoice('speechPitch', value)} />
+                  <Slider label="角色音量" value={characterVoice?.speechVolume ?? settings.speechVolume} min={0} max={1} step={0.1} disabled={!customEnabled} onChange={value => updateCharacterVoice('speechVolume', value)} />
+                  <label className="block space-y-2 text-xs text-zinc-400"><span>角色声音</span><select value={characterVoice?.voiceURI ?? settings.voiceURI} disabled={!customEnabled} onChange={event => updateCharacterVoice('voiceURI', event.target.value)} className="field-input"><option value="">系统默认声音</option>{voices.map(voice => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} · {voice.lang}</option>)}</select></label>
+                  <button type="button" disabled={!customEnabled} onClick={() => preview.currentId ? preview.stop() : preview.play('character-preview', `你好，我是${selectedCharacter.name}。这是我的专属声音试听。`)} className="flex items-center gap-2 rounded-lg border border-cyan-500/20 px-4 py-2 text-xs text-cyan-400 hover:bg-cyan-500/10 disabled:cursor-not-allowed disabled:opacity-40">{preview.currentId ? <Square size={12} /> : <Play size={12} />}{preview.currentId ? '停止角色试听' : '试听角色声音'}</button>
+                </div>
+              </>
+            )}
           </section>
 
           <div className={`rounded-xl border px-4 py-3 text-xs ${supported ? 'border-emerald-500/15 bg-emerald-500/5 text-emerald-400' : 'border-amber-500/15 bg-amber-500/5 text-amber-400'}`}>

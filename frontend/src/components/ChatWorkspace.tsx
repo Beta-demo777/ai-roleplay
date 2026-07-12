@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Character, Message, UserProfile } from '../types';
 import LucideIcon from './LucideIcon';
 import { getActiveModelServiceConfig } from '../modelService';
-import {FeatureSettings} from '../featureSettings';
+import {FeatureSettings, resolveCharacterVoiceSettings} from '../featureSettings';
 import {useTtsPlayer} from '../tts/useTtsPlayer';
 
 interface ChatWorkspaceProps {
@@ -83,7 +83,8 @@ export default function ChatWorkspace({
   const [isRecording, setIsRecording] = useState(false);
 
   const recognitionRef = useRef<any>(null);
-  const tts = useTtsPlayer(featureSettings);
+  const effectiveVoiceSettings = resolveCharacterVoiceSettings(featureSettings, character?.id);
+  const tts = useTtsPlayer(effectiveVoiceSettings);
   const wasLoadingRef = useRef(isLoading);
   const assistantBeforeGenerationRef = useRef<string>('');
 
@@ -101,7 +102,7 @@ export default function ChatWorkspace({
     wasLoadingRef.current = isLoading;
     if (!generationCompleted) return;
     if (!latest || latest.id === assistantBeforeGenerationRef.current) return;
-    if (featureSettings.voicePlaybackEnabled && featureSettings.autoPlayAssistantReplies) speakMessage(latest);
+    if (effectiveVoiceSettings.voicePlaybackEnabled && effectiveVoiceSettings.autoPlayAssistantReplies) speakMessage(latest);
   }, [messages, isLoading]);
 
   useEffect(() => {
