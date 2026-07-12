@@ -57,6 +57,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     environment:
+      ALLOW_PRIVATE_MODEL_HOSTS: ${ALLOW_PRIVATE_MODEL_HOSTS:-true}
+      API_RATE_LIMIT_PER_MINUTE: ${API_RATE_LIMIT_PER_MINUTE:-120}
       NODE_ENV: production
       PORT: 3000
     expose:

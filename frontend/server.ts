@@ -1,10 +1,35 @@
 import express from 'express';
 import path from 'path';
+import { validateModelServiceUrl } from './modelServiceSecurity';
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX_REQUESTS = Number(process.env.API_RATE_LIMIT_PER_MINUTE || 120);
+const requestBuckets = new Map<string, { count: number; resetAt: number }>();
 
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
 app.use(express.json({ limit: '2mb' }));
+
+app.use('/api', (req, res, next) => {
+  const now = Date.now();
+  const key = req.ip || req.socket.remoteAddress || 'unknown';
+  const existing = requestBuckets.get(key);
+  const bucket = !existing || existing.resetAt <= now
+    ? { count: 0, resetAt: now + RATE_LIMIT_WINDOW_MS }
+    : existing;
+  bucket.count += 1;
+  requestBuckets.set(key, bucket);
+
+  res.setHeader('X-RateLimit-Limit', RATE_LIMIT_MAX_REQUESTS);
+  res.setHeader('X-RateLimit-Remaining', Math.max(0, RATE_LIMIT_MAX_REQUESTS - bucket.count));
+  if (bucket.count > RATE_LIMIT_MAX_REQUESTS) {
+    res.setHeader('Retry-After', Math.ceil((bucket.resetAt - now) / 1000));
+    return res.status(429).json({ error: '请求过于频繁，请稍后再试。' });
+  }
+  return next();
+});
 
 interface ModelServiceInput {
   baseUrl?: string;
@@ -15,22 +40,6 @@ interface ModelServiceInput {
 interface ChatMessageInput {
   role: 'system' | 'user' | 'assistant';
   content: string;
-}
-
-function normalizeBaseUrl(value?: string): string {
-  if (!value?.trim()) {
-    throw new Error('请先在“模型服务”中配置 API Base URL。');
-  }
-
-  const normalized = value
-    .trim()
-    .replace(/\/+$/, '')
-    .replace(/\/(chat\/completions|models)$/i, '');
-  const url = new URL(normalized);
-  if (!['http:', 'https:'].includes(url.protocol)) {
-    throw new Error('模型服务地址只支持 HTTP 或 HTTPS。');
-  }
-  return url.toString().replace(/\/$/, '');
 }
 
 function selectApiKey(value?: string): string {
@@ -80,7 +89,7 @@ async function createChatCompletion(
   messages: ChatMessageInput[],
   config: { temperature?: number; topP?: number; maxOutputTokens?: number },
 ): Promise<string> {
-  const baseUrl = normalizeBaseUrl(modelService?.baseUrl);
+  const baseUrl = await validateModelServiceUrl(modelService?.baseUrl);
   if (!modelService?.model?.trim()) {
     throw new Error('请先在“模型服务”中选择一个可用模型。');
   }
@@ -114,7 +123,7 @@ async function createChatCompletion(
 app.post('/api/model-services/models', async (req, res) => {
   try {
     const modelService = req.body as ModelServiceInput;
-    const baseUrl = normalizeBaseUrl(modelService?.baseUrl);
+    const baseUrl = await validateModelServiceUrl(modelService?.baseUrl);
     const response = await requestWithTimeout(
       `${baseUrl}/models`,
       { method: 'GET', headers: buildHeaders(modelService.apiKey) },

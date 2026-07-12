@@ -62,6 +62,8 @@ npm run dev
 
 API Key 保存在浏览器本地存储中，并随每次请求发送到同源 Express 代理；项目不再使用或读取全局 AI 模型密钥。
 
+本地开发默认允许访问局域网或 `host.docker.internal` 上的模型服务。公开部署时，建议在 `.env` 中设置 `ALLOW_PRIVATE_MODEL_HOSTS=false`，阻止模型代理访问私有网络；`API_RATE_LIMIT_PER_MINUTE` 控制每个客户端每分钟的 API 请求上限。云元数据等受保护地址始终会被拒绝。
+
 ## 静态检查与构建
 
 ```bash
