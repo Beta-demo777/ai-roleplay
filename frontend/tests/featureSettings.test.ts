@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {DEFAULT_FEATURE_SETTINGS, resolveCharacterVoiceSettings} from '../src/featureSettings';
+import {DEFAULT_FEATURE_SETTINGS, DEFAULT_TTS_VOICE, resolveCharacterVoiceSettings} from '../src/featureSettings';
+
+test('uses dialogue-only Xiaoxiao voice defaults', () => {
+  assert.equal(DEFAULT_FEATURE_SETTINGS.ttsTextMode, 'dialogue-only');
+  assert.equal(DEFAULT_FEATURE_SETTINGS.voiceURI, DEFAULT_TTS_VOICE);
+});
 
 test('character voice settings inherit global defaults until enabled', () => {
   const inherited = resolveCharacterVoiceSettings({...DEFAULT_FEATURE_SETTINGS, speechRate: 1.2}, 'char-1');

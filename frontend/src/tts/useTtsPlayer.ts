@@ -20,7 +20,12 @@ export function useTtsPlayer(settings: FeatureSettings) {
     const chunks = splitTtsText(normalizeTtsText(content, settings.ttsTextMode));
     if (chunks.length === 0) return;
     const generation = generationRef.current;
-    const voice = window.speechSynthesis.getVoices().find(item => item.voiceURI === settings.voiceURI);
+    const availableVoices = window.speechSynthesis.getVoices();
+    const voice = availableVoices.find(item => item.voiceURI === settings.voiceURI)
+      || availableVoices.find(item => item.name === settings.voiceURI)
+      || (settings.voiceURI.includes('Xiaoxiao')
+        ? availableVoices.find(item => item.name.includes('Xiaoxiao') && item.lang.toLowerCase() === 'zh-cn')
+        : undefined);
     setCurrentId(id);
 
     const speakChunk = (index: number) => {

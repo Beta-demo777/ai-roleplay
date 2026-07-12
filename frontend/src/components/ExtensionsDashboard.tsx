@@ -97,6 +97,7 @@ export default function ExtensionsDashboard({settings, onChange, middlePanelWidt
               <span>声音</span>
               <select value={settings.voiceURI} disabled={!settings.voicePlaybackEnabled} onChange={event => update('voiceURI', event.target.value)} className="field-input disabled:cursor-not-allowed">
                 <option value="">系统默认声音</option>
+                {settings.voiceURI && !voices.some(voice => voice.voiceURI === settings.voiceURI || voice.name === settings.voiceURI) && <option value={settings.voiceURI}>{settings.voiceURI} · 当前浏览器不可用</option>}
                 {voices.map(voice => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} · {voice.lang}</option>)}
               </select>
             </label>
@@ -129,7 +130,7 @@ export default function ExtensionsDashboard({settings, onChange, middlePanelWidt
                   <Slider label="角色语速" value={characterVoice?.speechRate ?? settings.speechRate} min={0.6} max={1.6} step={0.1} disabled={!customEnabled} onChange={value => updateCharacterVoice('speechRate', value)} />
                   <Slider label="角色音调" value={characterVoice?.speechPitch ?? settings.speechPitch} min={0.5} max={1.5} step={0.1} disabled={!customEnabled} onChange={value => updateCharacterVoice('speechPitch', value)} />
                   <Slider label="角色音量" value={characterVoice?.speechVolume ?? settings.speechVolume} min={0} max={1} step={0.1} disabled={!customEnabled} onChange={value => updateCharacterVoice('speechVolume', value)} />
-                  <label className="block space-y-2 text-xs text-zinc-400"><span>角色声音</span><select value={characterVoice?.voiceURI ?? settings.voiceURI} disabled={!customEnabled} onChange={event => updateCharacterVoice('voiceURI', event.target.value)} className="field-input"><option value="">系统默认声音</option>{voices.map(voice => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} · {voice.lang}</option>)}</select></label>
+                  <label className="block space-y-2 text-xs text-zinc-400"><span>角色声音</span><select value={characterVoice?.voiceURI ?? settings.voiceURI} disabled={!customEnabled} onChange={event => updateCharacterVoice('voiceURI', event.target.value)} className="field-input"><option value="">系统默认声音</option>{(characterVoice?.voiceURI ?? settings.voiceURI) && !voices.some(voice => voice.voiceURI === (characterVoice?.voiceURI ?? settings.voiceURI) || voice.name === (characterVoice?.voiceURI ?? settings.voiceURI)) && <option value={characterVoice?.voiceURI ?? settings.voiceURI}>{characterVoice?.voiceURI ?? settings.voiceURI} · 当前浏览器不可用</option>}{voices.map(voice => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} · {voice.lang}</option>)}</select></label>
                   <button type="button" disabled={!customEnabled} onClick={() => preview.currentId ? preview.stop() : preview.play('character-preview', `你好，我是${selectedCharacter.name}。这是我的专属声音试听。`)} className="flex items-center gap-2 rounded-lg border border-cyan-500/20 px-4 py-2 text-xs text-cyan-400 hover:bg-cyan-500/10 disabled:cursor-not-allowed disabled:opacity-40">{preview.currentId ? <Square size={12} /> : <Play size={12} />}{preview.currentId ? '停止角色试听' : '试听角色声音'}</button>
                 </div>
               </>

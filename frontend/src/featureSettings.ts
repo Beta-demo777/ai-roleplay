@@ -1,4 +1,5 @@
 export const FEATURE_SETTINGS_STORAGE_KEY = 'aura_feature_settings_v1';
+export const DEFAULT_TTS_VOICE = 'Microsoft Xiaoxiao Online (Natural) - Chinese (Mainland)';
 
 export interface CharacterVoiceSettings {
   useCustom: boolean;
@@ -10,6 +11,7 @@ export interface CharacterVoiceSettings {
 }
 
 export interface FeatureSettings {
+  ttsDefaultsVersion: number;
   voicePlaybackEnabled: boolean;
   autoPlayAssistantReplies: boolean;
   speechRate: number;
@@ -21,13 +23,14 @@ export interface FeatureSettings {
 }
 
 export const DEFAULT_FEATURE_SETTINGS: FeatureSettings = {
+  ttsDefaultsVersion: 2,
   voicePlaybackEnabled: false,
   autoPlayAssistantReplies: false,
   speechRate: 1,
   speechPitch: 1,
   speechVolume: 1,
-  voiceURI: '',
-  ttsTextMode: 'full',
+  voiceURI: DEFAULT_TTS_VOICE,
+  ttsTextMode: 'dialogue-only',
   characterVoices: {},
 };
 
@@ -47,7 +50,14 @@ export function resolveCharacterVoiceSettings(settings: FeatureSettings, charact
 
 export function loadFeatureSettings(): FeatureSettings {
   try {
-    return {...DEFAULT_FEATURE_SETTINGS, ...JSON.parse(localStorage.getItem(FEATURE_SETTINGS_STORAGE_KEY) || '{}')};
+    const saved = JSON.parse(localStorage.getItem(FEATURE_SETTINGS_STORAGE_KEY) || '{}');
+    const merged = {...DEFAULT_FEATURE_SETTINGS, ...saved};
+    if ((saved.ttsDefaultsVersion || 0) < 2) {
+      merged.ttsDefaultsVersion = 2;
+      merged.ttsTextMode = 'dialogue-only';
+      merged.voiceURI = DEFAULT_TTS_VOICE;
+    }
+    return merged;
   } catch {
     return DEFAULT_FEATURE_SETTINGS;
   }
