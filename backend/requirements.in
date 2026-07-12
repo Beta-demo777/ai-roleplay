@@ -1,5 +1,6 @@
 alembic
 fastapi
+cryptography
 psycopg2-binary
 pydantic-settings
 redis

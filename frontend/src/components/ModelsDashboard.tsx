@@ -2,12 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import MiddlePanelResizeHandle from './MiddlePanelResizeHandle';
 import {
-  ACTIVE_MODEL_PROVIDER_STORAGE_KEY,
-  MODEL_PROVIDERS_STORAGE_KEY,
+  getActiveModelProviderId,
   ModelServiceProvider,
   loadModelProviders,
   normalizeModelServiceBaseUrl,
-  notifyModelServiceChanged,
+  saveModelProviders,
   setActiveModelProvider,
 } from '../modelService';
 import {
@@ -81,7 +80,7 @@ export default function ModelsDashboard({
   // Middle Column States (Providers)
   const [providers, setProviders] = useState<ModelServiceProvider[]>(loadModelProviders);
   const [selectedProviderId, setSelectedProviderId] = useState<string>(() => {
-    return localStorage.getItem(ACTIVE_MODEL_PROVIDER_STORAGE_KEY)
+    return getActiveModelProviderId()
       || loadModelProviders()[0]?.id
       || '';
   });
@@ -93,9 +92,7 @@ export default function ModelsDashboard({
 
   // Right Column Config States
   const selectedProvider = providers.find(p => p.id === selectedProviderId) || providers[0];
-  const [apiKey, setApiKey] = useState(() => {
-    return localStorage.getItem(`aura_api_key_${selectedProviderId}`) || '';
-  });
+  const [apiKey, setApiKey] = useState('');
   const [apiUrl, setApiUrl] = useState(selectedProvider ? selectedProvider.defaultUrl : '');
   const [showApiKey, setShowApiKey] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
@@ -108,8 +105,7 @@ export default function ModelsDashboard({
   // Sync API Key & Url when active provider changes
   useEffect(() => {
     if (selectedProvider) {
-      const savedKey = localStorage.getItem(`aura_api_key_${selectedProvider.id}`) || '';
-      setApiKey(savedKey);
+      setApiKey('');
       setApiUrl(selectedProvider.defaultUrl);
       setTestResult(null);
       setFetchSuccess(false);
@@ -129,10 +125,9 @@ export default function ModelsDashboard({
   }, [userProfile]);
 
   // Save Providers Helper
-  const saveProviders = (updated: ModelServiceProvider[]) => {
+  const saveProviders = (updated: ModelServiceProvider[], apiKeys: Record<string, string> = {}) => {
     setProviders(updated);
-    localStorage.setItem(MODEL_PROVIDERS_STORAGE_KEY, JSON.stringify(updated));
-    notifyModelServiceChanged();
+    void saveModelProviders(updated, selectedProviderId, apiKeys);
   };
 
   const handleSelectProvider = (id: string) => {
@@ -147,27 +142,32 @@ export default function ModelsDashboard({
     if (updatedProvider?.isOn) setActiveModelProvider(id);
   };
 
-  const saveConnectionSettings = () => {
+  const saveConnectionSettings = async () => {
     if (!selectedProvider) return providers;
     const normalizedUrl = normalizeModelServiceBaseUrl(apiUrl);
     if (!normalizedUrl) return providers;
     const updated = providers.map(provider => provider.id === selectedProvider.id
-      ? { ...provider, defaultUrl: normalizedUrl }
+      ? { ...provider, defaultUrl: normalizedUrl, hasApiKey: apiKey.trim() ? true : provider.hasApiKey }
       : provider);
-    localStorage.setItem(`aura_api_key_${selectedProvider.id}`, apiKey.trim());
-    saveProviders(updated);
+    await saveModelProviders(
+      updated,
+      selectedProvider.id,
+      apiKey.trim() ? {[selectedProvider.id]: apiKey.trim()} : {},
+    );
+    setProviders(updated);
+    setApiKey('');
     setActiveModelProvider(selectedProvider.id);
     return updated;
   };
 
   const requestAvailableModels = async (): Promise<string[]> => {
     if (!apiUrl.trim()) throw new Error('请先填写 API Base URL。');
+    await saveConnectionSettings();
     const response = await fetch('/api/model-services/models', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        baseUrl: normalizeModelServiceBaseUrl(apiUrl),
-        apiKey: apiKey.trim(),
+        providerId: selectedProvider?.id,
       }),
     });
     const data = await response.json();
@@ -200,7 +200,6 @@ export default function ModelsDashboard({
           }],
         }
       : provider);
-    localStorage.setItem(`aura_api_key_${selectedProvider.id}`, apiKey.trim());
     saveProviders(updated);
     setActiveModelProvider(selectedProvider.id);
   };
@@ -377,7 +376,6 @@ export default function ModelsDashboard({
     e.stopPropagation();
     if (!confirm('确定要删除该模型平台吗？')) return;
     const updated = providers.filter(p => p.id !== id);
-    localStorage.removeItem(`aura_api_key_${id}`);
     saveProviders(updated);
     if (selectedProviderId === id) {
       if (updated.length > 0) {
@@ -543,7 +541,7 @@ export default function ModelsDashboard({
                 <div className="relative flex-1">
                   <input
                     type={showApiKey ? 'text' : 'password'}
-                    placeholder="API Key（本地免鉴权服务可留空）"
+                    placeholder={selectedProvider.hasApiKey ? '密钥已加密保存；留空表示不修改' : 'API Key（本地免鉴权服务可留空）'}
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
                     onBlur={saveConnectionSettings}

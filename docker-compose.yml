@@ -59,6 +59,8 @@ services:
     environment:
       ALLOW_PRIVATE_MODEL_HOSTS: ${ALLOW_PRIVATE_MODEL_HOSTS:-true}
       API_RATE_LIMIT_PER_MINUTE: ${API_RATE_LIMIT_PER_MINUTE:-120}
+      BACKEND_INTERNAL_URL: http://backend:8000
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-aura-internal-local}
       NODE_ENV: production
       PORT: 3000
     expose:

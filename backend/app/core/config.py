@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     APP_SECRET_KEY: Optional[str] = None
     AUTH_COOKIE_SECURE: bool = False
     AUTH_SESSION_HOURS: int = 24
+    MODEL_CREDENTIAL_KEY: Optional[str] = None
+    INTERNAL_SERVICE_TOKEN: str = "aura-internal-local"
 
     model_config = SettingsConfigDict(
         env_file = EVN_FILE,

@@ -66,7 +66,9 @@ npm run dev
 
 进入应用的“模型服务”页面，添加支持 OpenAI-compatible API 的服务，填写 Base URL 和可选 API Key，然后获取模型列表并选择当前模型。聊天与润色都会使用这个当前模型。
 
-API Key 保存在浏览器本地存储中，并随每次请求发送到同源 Express 代理；项目不再使用或读取全局 AI 模型密钥。
+模型平台配置保存在 PostgreSQL，API Key 使用 Fernet 对称加密后落库。浏览器只保存运行时配置缓存，不会读取解密后的密钥；Express 代理通过内部服务令牌从 FastAPI 临时解析凭据。升级后，前端会在首次成功迁移模型平台配置后清除浏览器中遗留的 `aura_api_key_*`、平台列表和当前平台键。
+
+生产部署应分别设置随机的 `MODEL_CREDENTIAL_KEY` 和 `INTERNAL_SERVICE_TOKEN`。未设置 `MODEL_CREDENTIAL_KEY` 时会依次使用 `APP_SECRET_KEY`、PostgreSQL 密码派生加密密钥，以保持本地开发可运行；生产环境不建议依赖此回退行为。更换 `MODEL_CREDENTIAL_KEY` 前必须先重新保存已有模型密钥，否则旧密文将无法解密。
 
 本地开发默认允许访问局域网或 `host.docker.internal` 上的模型服务。公开部署时，建议在 `.env` 中设置 `ALLOW_PRIVATE_MODEL_HOSTS=false`，阻止模型代理访问私有网络；`API_RATE_LIMIT_PER_MINUTE` 控制每个客户端每分钟的 API 请求上限。云元数据等受保护地址始终会被拒绝。
 

@@ -6,6 +6,8 @@ const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = Number(process.env.API_RATE_LIMIT_PER_MINUTE || 120);
+const BACKEND_INTERNAL_URL = process.env.BACKEND_INTERNAL_URL || 'http://127.0.0.1:8000';
+const INTERNAL_SERVICE_TOKEN = process.env.INTERNAL_SERVICE_TOKEN || 'aura-internal-local';
 const requestBuckets = new Map<string, { count: number; resetAt: number }>();
 
 app.set('trust proxy', 1);
@@ -32,9 +34,13 @@ app.use('/api', (req, res, next) => {
 });
 
 interface ModelServiceInput {
-  baseUrl?: string;
-  apiKey?: string;
+  providerId?: string;
   model?: string;
+}
+
+interface ResolvedModelService {
+  baseUrl: string;
+  apiKey: string;
 }
 
 interface ChatMessageInput {
@@ -70,6 +76,22 @@ async function parseUpstreamResponse(response: Response): Promise<any> {
   return data;
 }
 
+async function resolveModelService(providerId: string | undefined, cookie: string): Promise<ResolvedModelService> {
+  if (!providerId?.trim()) throw new Error('请先选择模型平台。');
+  const response = await requestWithTimeout(
+    `${BACKEND_INTERNAL_URL}/api/v1/model-services/${encodeURIComponent(providerId)}/resolved`,
+    {
+      method: 'GET',
+      headers: {
+        'X-Internal-Service-Token': INTERNAL_SERVICE_TOKEN,
+        ...(cookie ? {Cookie: cookie} : {}),
+      },
+    },
+    10_000,
+  );
+  return parseUpstreamResponse(response);
+}
+
 async function requestWithTimeout(
   url: string,
   init: RequestInit,
@@ -88,8 +110,10 @@ async function createChatCompletion(
   modelService: ModelServiceInput,
   messages: ChatMessageInput[],
   config: { temperature?: number; topP?: number; maxOutputTokens?: number },
+  cookie: string,
 ): Promise<string> {
-  const baseUrl = await validateModelServiceUrl(modelService?.baseUrl);
+  const resolved = await resolveModelService(modelService?.providerId, cookie);
+  const baseUrl = await validateModelServiceUrl(resolved.baseUrl);
   if (!modelService?.model?.trim()) {
     throw new Error('请先在“模型服务”中选择一个可用模型。');
   }
@@ -98,7 +122,7 @@ async function createChatCompletion(
     `${baseUrl}/chat/completions`,
     {
       method: 'POST',
-      headers: buildHeaders(modelService.apiKey),
+      headers: buildHeaders(resolved.apiKey),
       body: JSON.stringify({
         model: modelService.model.trim(),
         messages,
@@ -123,10 +147,11 @@ async function createChatCompletion(
 app.post('/api/model-services/models', async (req, res) => {
   try {
     const modelService = req.body as ModelServiceInput;
-    const baseUrl = await validateModelServiceUrl(modelService?.baseUrl);
+    const resolved = await resolveModelService(modelService?.providerId, req.headers.cookie || '');
+    const baseUrl = await validateModelServiceUrl(resolved.baseUrl);
     const response = await requestWithTimeout(
       `${baseUrl}/models`,
-      { method: 'GET', headers: buildHeaders(modelService.apiKey) },
+      { method: 'GET', headers: buildHeaders(resolved.apiKey) },
       20_000,
     );
     const data = await parseUpstreamResponse(response);
@@ -158,6 +183,7 @@ app.post('/api/chat', async (req, res) => {
       modelService,
       normalizedMessages,
       { temperature, topP, maxOutputTokens },
+      req.headers.cookie || '',
     );
     return res.json({ reply });
   } catch (err: any) {
@@ -189,6 +215,7 @@ app.post('/api/polish', async (req, res) => {
         { role: 'user', content: prompt },
       ],
       { temperature: 0.8, topP: 0.95, maxOutputTokens: 2048 },
+      req.headers.cookie || '',
     );
     return res.json({ polished: polished.trim() });
   } catch (err: any) {
@@ -200,7 +227,7 @@ app.post('/api/polish', async (req, res) => {
 app.get('/api/status', (_req, res) => {
   res.json({
     status: 'ok',
-    modelServiceMode: 'browser-configured',
+    modelServiceMode: 'backend-encrypted',
     timestamp: new Date().toISOString(),
   });
 });

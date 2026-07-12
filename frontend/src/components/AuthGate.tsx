@@ -1,5 +1,6 @@
 import {FormEvent, ReactNode, useEffect, useState} from 'react';
 import {LockKeyhole} from 'lucide-react';
+import {bootstrapModelServices} from '../modelService';
 
 type AuthStatus = {
   enabled: boolean;
@@ -18,7 +19,10 @@ export default function AuthGate({children}: {children: ReactNode}) {
         if (!response.ok) throw new Error('认证服务不可用');
         return response.json() as Promise<AuthStatus>;
       })
-      .then(setStatus)
+      .then(async nextStatus => {
+        if (!nextStatus.enabled || nextStatus.authenticated) await bootstrapModelServices();
+        setStatus(nextStatus);
+      })
       .catch(() => setStatus({enabled: false, authenticated: true}));
   }, []);
 
@@ -34,6 +38,7 @@ export default function AuthGate({children}: {children: ReactNode}) {
         body: JSON.stringify({password}),
       });
       if (!response.ok) throw new Error('密码错误，请重试');
+      await bootstrapModelServices();
       setStatus({enabled: true, authenticated: true});
       setPassword('');
     } catch (reason) {
