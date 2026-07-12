@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Character, Message, UserProfile, ChatThread } from './types';
 import LucideIcon from './components/LucideIcon';
 import ChatWorkspace from './components/ChatWorkspace';
@@ -8,6 +8,7 @@ import AssistantsDashboard from './components/AssistantsDashboard';
 import ModelsDashboard from './components/ModelsDashboard';
 import MiddlePanelResizeHandle from './components/MiddlePanelResizeHandle';
 import { getActiveModelServiceConfig } from './modelService';
+import { loadRemoteAppState, PersistedAppState, saveRemoteAppState } from './stateApi';
 
 const THREADS_LOCAL_STORAGE_KEY = 'aura_tavern_threads_v2';
 const SESSIONS_LOCAL_STORAGE_KEY = 'aura_tavern_sessions_v1';
@@ -46,6 +47,13 @@ export default function App() {
   const [selectedThreadId, setSelectedThreadId] = useState<string>('');
   const [renamingThreadId, setRenamingThreadId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState<string>('');
+  const backendStateReadyRef = useRef(false);
+  const stateSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const persistedStateRef = useRef<PersistedAppState>({
+    profile: userProfile,
+    characters: [],
+    threads: [],
+  });
 
   const [isLoading, setIsLoading] = useState(false);
   // Model hyperparameters with local storage fallbacks
@@ -117,6 +125,16 @@ export default function App() {
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
+  const queueRemoteStateSync = () => {
+    if (!backendStateReadyRef.current) return;
+    if (stateSyncTimerRef.current) clearTimeout(stateSyncTimerRef.current);
+    stateSyncTimerRef.current = setTimeout(() => {
+      saveRemoteAppState(persistedStateRef.current).catch(error => {
+        console.error('Failed to persist application state:', error);
+      });
+    }, 300);
+  };
+
   // Responsive sidebar behavior: close on narrow screen upon load
   useEffect(() => {
     const handleResize = () => {
@@ -172,10 +190,12 @@ export default function App() {
     }
 
     // Load user custom profile
+    let loadedProfile = userProfile;
     const savedProfile = localStorage.getItem(USER_PROFILE_LOCAL_STORAGE_KEY);
     if (savedProfile) {
       try {
-        setUserProfile(JSON.parse(savedProfile));
+        loadedProfile = JSON.parse(savedProfile);
+        setUserProfile(loadedProfile);
       } catch (e) {
         console.error('Error parsing user profile:', e);
       }
@@ -235,22 +255,63 @@ export default function App() {
     if (loadedThreads.length > 0) {
       setSelectedThreadId(loadedThreads[0].id);
     }
+
+    const localState: PersistedAppState = {
+      initialized: true,
+      profile: loadedProfile,
+      characters: loadedCharacters,
+      threads: loadedThreads,
+    };
+    persistedStateRef.current = localState;
+
+    const hydrateFromBackend = async () => {
+      try {
+        const remoteState = await loadRemoteAppState();
+        if (remoteState.initialized) {
+          persistedStateRef.current = remoteState;
+          setUserProfile(remoteState.profile);
+          setCustomCharacters(remoteState.characters);
+          setThreads(remoteState.threads);
+          setSelectedThreadId(remoteState.threads[0]?.id || '');
+          localStorage.setItem(USER_PROFILE_LOCAL_STORAGE_KEY, JSON.stringify(remoteState.profile));
+          localStorage.setItem(CUSTOM_CHARACTERS_LOCAL_STORAGE_KEY, JSON.stringify(remoteState.characters));
+          localStorage.setItem(THREADS_LOCAL_STORAGE_KEY, JSON.stringify(remoteState.threads));
+        } else {
+          const importedState = await saveRemoteAppState(localState);
+          persistedStateRef.current = importedState;
+        }
+        backendStateReadyRef.current = true;
+      } catch (error) {
+        console.warn('Backend state is unavailable; continuing with local cache.', error);
+      }
+    };
+    hydrateFromBackend();
+
+    return () => {
+      if (stateSyncTimerRef.current) clearTimeout(stateSyncTimerRef.current);
+    };
   }, []);
 
   // 2. Helper State savers
   const saveCustomCharacters = (updated: Character[]) => {
     setCustomCharacters(updated);
     localStorage.setItem(CUSTOM_CHARACTERS_LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    persistedStateRef.current = { ...persistedStateRef.current, characters: updated };
+    queueRemoteStateSync();
   };
 
   const saveThreads = (updated: ChatThread[]) => {
     setThreads(updated);
     localStorage.setItem(THREADS_LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    persistedStateRef.current = { ...persistedStateRef.current, threads: updated };
+    queueRemoteStateSync();
   };
 
   const saveUserProfile = (profile: UserProfile) => {
     setUserProfile(profile);
     localStorage.setItem(USER_PROFILE_LOCAL_STORAGE_KEY, JSON.stringify(profile));
+    persistedStateRef.current = { ...persistedStateRef.current, profile };
+    queueRemoteStateSync();
   };
 
   // 3. Collect active characters list & Active references
