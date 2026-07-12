@@ -6,6 +6,7 @@ import CharacterModal from './components/CharacterModal';
 import UserProfileModal from './components/UserProfileModal';
 import AssistantsDashboard from './components/AssistantsDashboard';
 import ModelsDashboard from './components/ModelsDashboard';
+import ScenariosDashboard from './components/ScenariosDashboard';
 import MiddlePanelResizeHandle from './components/MiddlePanelResizeHandle';
 import { getActiveModelServiceConfig } from './modelService';
 import { loadRemoteAppState, PersistedAppState, saveRemoteAppState } from './stateApi';
@@ -40,7 +41,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   // Active Main Navigation Tab
-  const [activeTab, setActiveTab] = useState<'chat' | 'assistants' | 'models'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'assistants' | 'scenarios' | 'models'>('chat');
 
   // Chats memory sessions & Threads
   const [threads, setThreads] = useState<ChatThread[]>([]);
@@ -832,7 +833,8 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
         <div className="flex-1 flex flex-col items-center space-y-4 w-full">
           {([
             { id: 'chat', label: '对话', icon: 'MessageSquare' },
-            { id: 'assistants', label: 'AI角色', icon: 'Bot' },
+            { id: 'assistants', label: '角色管理', icon: 'Bot' },
+            { id: 'scenarios', label: '场景管理', icon: 'BookOpen' },
             { id: 'models', label: '模型服务', icon: 'Cpu' },
           ] as const).map((item) => {
             const isActive = activeTab === item.id;
@@ -924,7 +926,7 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
                       <div className="overflow-y-auto p-1.5 space-y-0.5 flex-1">
                         {allCharacters.length === 0 ? (
                           <div className="text-center py-4 px-2 text-[10px] text-zinc-500">
-                            暂无 AI 角色，请前往「AI角色」页面创建。
+                            暂无角色，请前往「角色管理」页面创建。
                           </div>
                         ) : (
                           allCharacters.map((char) => (
@@ -1199,7 +1201,16 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
         />
       )}
 
-      {/* 4. MODELS CONFIGURATION WORKSPACE */}
+      {/* 4. SCENARIOS MANAGEMENT WORKSPACE */}
+      {activeTab === 'scenarios' && (
+        <ScenariosDashboard
+          characters={allCharacters}
+          middlePanelWidth={middlePanelWidth}
+          onMiddlePanelResizeStart={handleMiddlePanelResizeStart}
+        />
+      )}
+
+      {/* 5. MODELS CONFIGURATION WORKSPACE */}
       {activeTab === 'models' && (
         <ModelsDashboard
           userProfile={userProfile}

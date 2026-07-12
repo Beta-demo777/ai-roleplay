@@ -150,7 +150,7 @@ export default function AssistantsDashboard({
             id="sidebar-create-new-char-btn"
           >
             <LucideIcon name="Plus" size={13} className="group-hover:scale-110 transition-transform" />
-            <span>定制全新 AI 角色</span>
+            <span>创建全新角色</span>
           </button>
         </div>
 
