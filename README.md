@@ -80,3 +80,13 @@ npm run build
 cd backend
 .venv/bin/python -c "from app.main import app; print(app.title)"
 ```
+
+后端单元测试与迁移检查：
+
+```bash
+cd backend
+.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/alembic upgrade head --sql
+```
+
+GitHub Actions 会自动执行前端类型检查、代理安全测试、生产构建、后端状态 API 测试、Alembic SQL 生成和 Docker 镜像构建。
