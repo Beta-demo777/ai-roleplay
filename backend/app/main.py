@@ -3,7 +3,7 @@ from app.db.session import test_db_connection
 from app.core.redis import redis_client
 
 app = FastAPI(
-    title="AI Assistant API",
+    title="AI Roleplay API",
     version="0.1.0"
 )
 
@@ -11,7 +11,7 @@ app = FastAPI(
 @app.get("/")
 def root():
     return {
-        "message": "AI Assistant Backend Running!"
+        "message": "AI Roleplay Backend Running!"
     }
 
 @app.get("/health/db")

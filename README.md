@@ -1,0 +1,78 @@
+# Aura AI 角色扮演
+
+Aura 是一个中文 AI 角色扮演应用。React 前端负责角色、会话和人设交互，Express 负责代理用户配置的 OpenAI-compatible 模型服务，FastAPI 提供 PostgreSQL 和 Redis 基础设施接口，Nginx 作为统一入口。
+
+## 服务结构
+
+- `http://localhost:3000/`：React 应用
+- `http://localhost:3000/api/*`：Express 模型服务代理
+- `http://localhost:3000/backend/*`：FastAPI
+- `http://localhost:8000/`：FastAPI 本地调试入口
+- `localhost:5432`：PostgreSQL 本地调试端口
+
+端口可通过根目录 `.env` 中的 `WEB_PORT`、`API_PORT` 和 `POSTGRES_PORT` 调整。
+
+## 使用 Docker 启动
+
+1. 从示例创建配置：
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. 编辑 `.env`，设置 PostgreSQL 凭据。模型密钥不写入 `.env`，而是在应用的“模型服务”页面中配置。
+
+3. 构建并启动：
+
+   ```bash
+   docker compose up --build -d
+   ```
+
+4. 查看状态：
+
+   ```bash
+   docker compose ps
+   curl http://localhost:3000/api/status
+   curl http://localhost:3000/backend/health/db
+   curl http://localhost:3000/backend/health/redis
+   ```
+
+5. 停止服务：
+
+   ```bash
+   docker compose down
+   ```
+
+PostgreSQL 数据保存在 `docker/postgresql/data/`，Redis 数据保存在 Docker 命名卷中。
+
+## 单独开发前端
+
+```bash
+cd frontend
+npm ci
+cp .env.example .env.local
+npm run dev
+```
+
+开发模式默认监听 `http://localhost:3000`。
+
+## 配置模型服务
+
+进入应用的“模型服务”页面，添加支持 OpenAI-compatible API 的服务，填写 Base URL 和可选 API Key，然后获取模型列表并选择当前模型。聊天与润色都会使用这个当前模型。
+
+API Key 保存在浏览器本地存储中，并随每次请求发送到同源 Express 代理；项目不再使用或读取全局 AI 模型密钥。
+
+## 静态检查与构建
+
+```bash
+cd frontend
+npm run lint
+npm run build
+```
+
+后端导入检查：
+
+```bash
+cd backend
+.venv/bin/python -c "from app.main import app; print(app.title)"
+```
