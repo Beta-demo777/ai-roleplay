@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Character, Message, UserProfile } from '../types';
 import LucideIcon from './LucideIcon';
 import { getActiveModelServiceConfig } from '../modelService';
+import {FeatureSettings} from '../featureSettings';
 
 interface ChatWorkspaceProps {
   character?: Character;
@@ -16,6 +17,7 @@ interface ChatWorkspaceProps {
   sidebarOpen: boolean;
   onToggleSidebar: () => void;
   onOpenCharacterModal?: () => void;
+  featureSettings: FeatureSettings;
 }
 
 // Custom Roleplay Format Parser
@@ -69,7 +71,8 @@ export default function ChatWorkspace({
   userProfile,
   sidebarOpen,
   onToggleSidebar,
-  onOpenCharacterModal
+  onOpenCharacterModal,
+  featureSettings,
 }: ChatWorkspaceProps) {
   const [inputText, setInputText] = useState('');
   const [showInspector, setShowInspector] = useState(false);
@@ -79,6 +82,47 @@ export default function ChatWorkspace({
   const [isRecording, setIsRecording] = useState(false);
 
   const recognitionRef = useRef<any>(null);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+  const lastAssistantMessageIdRef = useRef<string>(
+    [...messages].reverse().find(message => message.role === 'assistant' && !message.id.endsWith('-greeting'))?.id || '',
+  );
+
+  const stopSpeaking = () => {
+    window.speechSynthesis?.cancel();
+    setSpeakingMessageId(null);
+  };
+
+  const speakMessage = (message: Message) => {
+    if (!featureSettings.voicePlaybackEnabled || !('speechSynthesis' in window)) return;
+    if (speakingMessageId === message.id) {
+      stopSpeaking();
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const text = message.content.replace(/\*([^*]+)\*/g, '$1').replace(/\s+/g, ' ').trim();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'zh-CN';
+    utterance.rate = featureSettings.speechRate;
+    utterance.pitch = featureSettings.speechPitch;
+    utterance.onend = () => setSpeakingMessageId(null);
+    utterance.onerror = () => setSpeakingMessageId(null);
+    setSpeakingMessageId(message.id);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  useEffect(() => {
+    const latest = [...messages].reverse().find(message => message.role === 'assistant' && !message.id.endsWith('-greeting'));
+    if (!latest) return;
+    if (latest.id !== lastAssistantMessageIdRef.current) {
+      lastAssistantMessageIdRef.current = latest.id;
+      if (featureSettings.voicePlaybackEnabled && featureSettings.autoPlayAssistantReplies) speakMessage(latest);
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (!featureSettings.voicePlaybackEnabled) stopSpeaking();
+    return () => window.speechSynthesis?.cancel();
+  }, [featureSettings.voicePlaybackEnabled]);
 
   // Message being edited
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -516,6 +560,18 @@ export default function ChatWorkspace({
                           >
                             <LucideIcon name="Copy" size={11} />
                           </button>
+
+                          {isAssistant && featureSettings.voicePlaybackEnabled && (
+                            <button
+                              onClick={() => speakMessage(msg)}
+                              className={speakingMessageId === msg.id ? 'text-cyan-400' : 'hover:text-cyan-400 transition-colors'}
+                              title={speakingMessageId === msg.id ? '停止播放' : '播放 AI 回复'}
+                              aria-label={speakingMessageId === msg.id ? '停止播放' : '播放 AI 回复'}
+                              id={`speak-btn-${msg.id}`}
+                            >
+                              <LucideIcon name={speakingMessageId === msg.id ? 'VolumeX' : 'Volume2'} size={12} />
+                            </button>
+                          )}
 
                           <button
                             onClick={() => startEditing(msg)}

@@ -33,6 +33,7 @@ import {
   Crown,
   Heart,
   Volume2,
+  VolumeX,
   Award,
   Info
 } from 'lucide-react';
@@ -111,6 +112,8 @@ export default function LucideIcon({ name, className = '', size = 20 }: LucideIc
       return <Heart className={className} size={size} />;
     case 'Volume2':
       return <Volume2 className={className} size={size} />;
+    case 'VolumeX':
+      return <VolumeX className={className} size={size} />;
     case 'Award':
       return <Award className={className} size={size} />;
     case 'Info':

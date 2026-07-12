@@ -7,9 +7,11 @@ import UserProfileModal from './components/UserProfileModal';
 import AssistantsDashboard from './components/AssistantsDashboard';
 import ModelsDashboard from './components/ModelsDashboard';
 import ScenariosDashboard from './components/ScenariosDashboard';
+import ExtensionsDashboard from './components/ExtensionsDashboard';
 import MiddlePanelResizeHandle from './components/MiddlePanelResizeHandle';
 import { getActiveModelServiceConfig } from './modelService';
 import { loadRemoteAppState, PersistedAppState, saveRemoteAppState } from './stateApi';
+import {FeatureSettings, loadFeatureSettings, saveFeatureSettings} from './featureSettings';
 
 const THREADS_LOCAL_STORAGE_KEY = 'aura_tavern_threads_v2';
 const SESSIONS_LOCAL_STORAGE_KEY = 'aura_tavern_sessions_v1';
@@ -41,7 +43,13 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   // Active Main Navigation Tab
-  const [activeTab, setActiveTab] = useState<'chat' | 'assistants' | 'scenarios' | 'models'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'assistants' | 'scenarios' | 'models' | 'extensions'>('chat');
+  const [featureSettings, setFeatureSettings] = useState<FeatureSettings>(loadFeatureSettings);
+
+  const handleFeatureSettingsChange = (settings: FeatureSettings) => {
+    setFeatureSettings(settings);
+    saveFeatureSettings(settings);
+  };
 
   // Chats memory sessions & Threads
   const [threads, setThreads] = useState<ChatThread[]>([]);
@@ -836,6 +844,7 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
             { id: 'assistants', label: '角色管理', icon: 'Bot' },
             { id: 'scenarios', label: '场景管理', icon: 'BookOpen' },
             { id: 'models', label: '模型服务', icon: 'Cpu' },
+            { id: 'extensions', label: '功能拓展', icon: 'Settings' },
           ] as const).map((item) => {
             const isActive = activeTab === item.id;
             return (
@@ -1175,6 +1184,7 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
                 sidebarOpen={sidebarOpen}
                 onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
                 onOpenCharacterModal={handleOpenNewCharacterModal}
+                featureSettings={featureSettings}
               />
             </div>
           </main>
@@ -1221,6 +1231,16 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
           onSaveTopP={handleSaveTopP}
           maxOutputTokens={maxOutputTokens}
           onSaveMaxOutputTokens={handleSaveMaxOutputTokens}
+          middlePanelWidth={middlePanelWidth}
+          onMiddlePanelResizeStart={handleMiddlePanelResizeStart}
+        />
+      )}
+
+      {/* 6. OPTIONAL FEATURE SETTINGS */}
+      {activeTab === 'extensions' && (
+        <ExtensionsDashboard
+          settings={featureSettings}
+          onChange={handleFeatureSettingsChange}
           middlePanelWidth={middlePanelWidth}
           onMiddlePanelResizeStart={handleMiddlePanelResizeStart}
         />
