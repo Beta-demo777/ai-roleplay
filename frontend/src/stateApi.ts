@@ -3,6 +3,8 @@ import { Character, ChatThread, DialogueScenario, UserProfile } from './types';
 export interface PersistedAppState {
   initialized?: boolean;
   profile: UserProfile;
+  personas: UserProfile[];
+  activePersonaId?: string;
   characters: Character[];
   scenarios: DialogueScenario[];
   threads: ChatThread[];

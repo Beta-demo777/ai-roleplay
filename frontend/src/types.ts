@@ -13,6 +13,7 @@ export interface Character {
 }
 
 export interface UserProfile {
+  id?: string;
   name: string;
   avatar: string; // Icon name e.g. 'User', 'Bot', 'Cpu', 'Crown'
   description: string; // User background for roleplay
@@ -48,6 +49,7 @@ export interface ChatThread {
   id: string;
   characterId: string;
   scenarioId?: string;
+  personaId?: string;
   title: string;
   messages: Message[];
   timestamp: number;

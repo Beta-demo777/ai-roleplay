@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class UserProfileSchema(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
+    id: str = Field(default="default", min_length=1, max_length=64)
     name: str = Field(min_length=1, max_length=120)
     avatar: str = Field(default="User", max_length=80)
     description: str = ""
@@ -61,6 +62,7 @@ class ChatThreadSchema(BaseModel):
     id: str = Field(min_length=1, max_length=160)
     character_id: str = Field(alias="characterId", min_length=1, max_length=120)
     scenario_id: Optional[str] = Field(default=None, alias="scenarioId", max_length=160)
+    persona_id: Optional[str] = Field(default=None, alias="personaId", max_length=64)
     title: str = Field(min_length=1, max_length=300)
     messages: List[MessageSchema] = Field(default_factory=list)
     timestamp: int
@@ -69,6 +71,8 @@ class ChatThreadSchema(BaseModel):
 class AppStateSchema(BaseModel):
     initialized: bool = False
     profile: UserProfileSchema
+    personas: List[UserProfileSchema] = Field(default_factory=list)
+    active_persona_id: Optional[str] = Field(default=None, alias="activePersonaId", max_length=64)
     characters: List[CharacterSchema]
     scenarios: List[DialogueScenarioSchema] = Field(default_factory=list)
     threads: List[ChatThreadSchema]

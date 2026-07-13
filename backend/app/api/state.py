@@ -25,6 +25,7 @@ router = APIRouter(
 
 def serialize_profile(profile: UserProfile) -> UserProfileSchema:
     return UserProfileSchema(
+        id=profile.id,
         name=profile.name,
         avatar=profile.avatar,
         description=profile.description,
@@ -68,11 +69,14 @@ def serialize_scenario(scenario: DialogueScenario) -> DialogueScenarioSchema:
     )
 
 
-def serialize_thread(thread: ChatThread, messages: List[ChatMessage]) -> ChatThreadSchema:
+def serialize_thread(
+    thread: ChatThread, messages: List[ChatMessage], default_persona_id: str
+) -> ChatThreadSchema:
     return ChatThreadSchema(
         id=thread.id,
         characterId=thread.character_id,
         scenarioId=thread.scenario_id,
+        personaId=thread.persona_id or default_persona_id,
         title=thread.title,
         timestamp=thread.timestamp,
         messages=[
@@ -89,17 +93,20 @@ def serialize_thread(thread: ChatThread, messages: List[ChatMessage]) -> ChatThr
 
 @router.get("", response_model=AppStateSchema)
 def get_state(db: Session = Depends(get_db)) -> AppStateSchema:
-    profile = db.get(UserProfile, "default")
-    if profile is None:
+    profiles = list(db.scalars(select(UserProfile).order_by(UserProfile.created_at)).all())
+    if not profiles:
         profile = UserProfile(
             id="default",
             name="旅人",
             avatar="Crown",
             description="一个行经此处的冒险者。",
+            is_active=True,
         )
         db.add(profile)
         db.commit()
         db.refresh(profile)
+        profiles = [profile]
+    profile = next((item for item in profiles if item.is_active), profiles[0])
 
     characters = list(db.scalars(select(Character).order_by(Character.created_at)).all())
     scenarios = list(db.scalars(select(DialogueScenario).order_by(DialogueScenario.created_at)).all())
@@ -116,9 +123,14 @@ def get_state(db: Session = Depends(get_db)) -> AppStateSchema:
     return AppStateSchema(
         initialized=profile.is_initialized,
         profile=serialize_profile(profile),
+        personas=[serialize_profile(item) for item in profiles],
+        activePersonaId=profile.id,
         characters=[serialize_character(character) for character in characters],
         scenarios=[serialize_scenario(scenario) for scenario in scenarios],
-        threads=[serialize_thread(thread, messages_by_thread.get(thread.id, [])) for thread in threads],
+        threads=[
+            serialize_thread(thread, messages_by_thread.get(thread.id, []), profile.id)
+            for thread in threads
+        ],
     )
 
 
@@ -128,18 +140,25 @@ def replace_state(payload: AppStateSchema, db: Session = Depends(get_db)) -> App
     db.execute(delete(ChatThread))
     db.execute(delete(DialogueScenario))
     db.execute(delete(Character))
+    db.execute(delete(UserProfile))
 
-    profile = db.get(UserProfile, "default")
-    if profile is None:
-        profile = UserProfile(id="default")
-        db.add(profile)
-    profile.name = payload.profile.name
-    profile.avatar = payload.profile.avatar
-    profile.description = payload.profile.description
-    profile.gender = payload.profile.gender
-    profile.personality = payload.profile.personality
-    profile.appearance = payload.profile.appearance
-    profile.is_initialized = True
+    personas = payload.personas or [payload.profile]
+    active_persona_id = payload.active_persona_id or payload.profile.id or personas[0].id
+    for item in personas:
+        db.add(
+            UserProfile(
+                id=item.id,
+                name=item.name,
+                avatar=item.avatar,
+                description=item.description,
+                gender=item.gender,
+                personality=item.personality,
+                appearance=item.appearance,
+                is_initialized=True,
+                is_active=item.id == active_persona_id,
+            )
+        )
+    persona_ids = {item.id for item in personas}
 
     for item in payload.characters:
         db.add(
@@ -187,6 +206,7 @@ def replace_state(payload: AppStateSchema, db: Session = Depends(get_db)) -> App
                 id=thread.id,
                 character_id=thread.character_id,
                 scenario_id=thread.scenario_id if thread.scenario_id in scenario_ids else None,
+                persona_id=thread.persona_id if thread.persona_id in persona_ids else active_persona_id,
                 title=thread.title,
                 timestamp=thread.timestamp,
             )

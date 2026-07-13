@@ -28,10 +28,16 @@ class StateApiTest(unittest.TestCase):
         payload = AppStateSchema.model_validate(
             {
                 "profile": {
+                    "id": "persona-main",
                     "name": "旅人",
                     "avatar": "Crown",
                     "description": "测试用户",
                 },
+                "personas": [
+                    {"id": "persona-main", "name": "旅人", "avatar": "Crown", "description": "测试用户"},
+                    {"id": "persona-alt", "name": "骑士", "avatar": "User", "description": "备用人设"},
+                ],
+                "activePersonaId": "persona-main",
                 "characters": [
                     {
                         "id": "char-test",
@@ -62,6 +68,7 @@ class StateApiTest(unittest.TestCase):
                         "id": "thread-test",
                         "characterId": "char-test",
                         "scenarioId": "scenario-test",
+                        "personaId": "persona-alt",
                         "title": "测试对话",
                         "timestamp": 1,
                         "messages": [
@@ -79,9 +86,12 @@ class StateApiTest(unittest.TestCase):
 
         state = replace_state(payload, self.db)
         self.assertEqual(state.profile.name, "旅人")
+        self.assertEqual(len(state.personas), 2)
+        self.assertEqual(state.active_persona_id, "persona-main")
         self.assertEqual(state.characters[0].first_message, "你好")
         self.assertEqual(state.scenarios[0].location, "旧城酒馆")
         self.assertEqual(state.threads[0].scenario_id, "scenario-test")
+        self.assertEqual(state.threads[0].persona_id, "persona-alt")
         self.assertEqual(state.threads[0].messages[0].content, "你好")
 
         loaded = get_state(self.db)

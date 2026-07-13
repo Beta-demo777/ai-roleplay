@@ -3,11 +3,11 @@ import { Character, Message, UserProfile, ChatThread, DialogueScenario } from '.
 import LucideIcon from './components/LucideIcon';
 import ChatWorkspace from './components/ChatWorkspace';
 import CharacterModal from './components/CharacterModal';
-import UserProfileModal from './components/UserProfileModal';
 import AssistantsDashboard from './components/AssistantsDashboard';
 import ModelsDashboard from './components/ModelsDashboard';
 import ScenariosDashboard from './components/ScenariosDashboard';
 import ExtensionsDashboard from './components/ExtensionsDashboard';
+import PersonasDashboard from './components/PersonasDashboard';
 import MiddlePanelResizeHandle from './components/MiddlePanelResizeHandle';
 import { getActiveModelServiceConfig } from './modelService';
 import { loadRemoteAppState, PersistedAppState, saveRemoteAppState } from './stateApi';
@@ -63,17 +63,20 @@ export default function App() {
 
   // User custom profile
   const [userProfile, setUserProfile] = useState<UserProfile>({
+    id: 'default',
     name: '旅人',
     avatar: 'Crown',
     description: '一个行经此处的冒险者，性格沉稳，对世界的古老秘密与奇妙见闻充满好奇。'
   });
+  const [personas, setPersonas] = useState<UserProfile[]>([]);
+  const [activePersonaId, setActivePersonaId] = useState('default');
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   // Active Main Navigation Tab
-  const [activeTab, setActiveTab] = useState<'chat' | 'assistants' | 'scenarios' | 'models' | 'extensions'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'assistants' | 'scenarios' | 'personas' | 'models' | 'extensions'>('chat');
   const [featureSettings, setFeatureSettings] = useState<FeatureSettings>(loadFeatureSettings);
 
   const handleFeatureSettingsChange = (settings: FeatureSettings) => {
@@ -90,6 +93,8 @@ export default function App() {
   const stateSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const persistedStateRef = useRef<PersistedAppState>({
     profile: userProfile,
+    personas: [userProfile],
+    activePersonaId: 'default',
     characters: [],
     scenarios: [],
     threads: [],
@@ -161,11 +166,11 @@ export default function App() {
   const [newChatDropdownOpen, setNewChatDropdownOpen] = useState(false);
   const [newChatCharacterId, setNewChatCharacterId] = useState('');
   const [newChatScenarioId, setNewChatScenarioId] = useState('');
+  const [newChatPersonaId, setNewChatPersonaId] = useState('default');
 
   // Modals
   const [isCharacterModalOpen, setIsCharacterModalOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const queueRemoteStateSync = () => {
     if (!backendStateReadyRef.current) return;
@@ -236,12 +241,14 @@ export default function App() {
     const savedProfile = localStorage.getItem(USER_PROFILE_LOCAL_STORAGE_KEY);
     if (savedProfile) {
       try {
-        loadedProfile = JSON.parse(savedProfile);
+        loadedProfile = {...JSON.parse(savedProfile), id: JSON.parse(savedProfile).id || 'default'};
         setUserProfile(loadedProfile);
       } catch (e) {
         console.error('Error parsing user profile:', e);
       }
     }
+    setPersonas([loadedProfile]);
+    setActivePersonaId(loadedProfile.id || 'default');
 
     const loadedScenarios = loadLocalScenarios();
     setScenarios(loadedScenarios);
@@ -273,6 +280,7 @@ export default function App() {
               loadedThreads.push({
                 id: `thread-${charId}-${Date.now()}`,
                 characterId: charId,
+                personaId: loadedProfile.id || 'default',
                 title: char ? `与 ${char.name} 的对话` : `与 角色 的对话`,
                 messages: messages,
                 timestamp: messages[messages.length - 1]?.timestamp || Date.now()
@@ -291,6 +299,7 @@ export default function App() {
       loadedThreads.push({
         id: `thread-default-${Date.now()}`,
         characterId: defaultChar.id,
+        personaId: loadedProfile.id || 'default',
         title: `与 ${defaultChar.name} 的对话`,
         messages: [],
         timestamp: Date.now()
@@ -305,6 +314,8 @@ export default function App() {
     const localState: PersistedAppState = {
       initialized: true,
       profile: loadedProfile,
+      personas: [loadedProfile],
+      activePersonaId: loadedProfile.id || 'default',
       characters: loadedCharacters,
       scenarios: loadedScenarios,
       threads: loadedThreads,
@@ -321,6 +332,10 @@ export default function App() {
           }
           persistedStateRef.current = remoteState;
           setUserProfile(remoteState.profile);
+          const remotePersonas = remoteState.personas?.length ? remoteState.personas : [remoteState.profile];
+          const remoteActivePersonaId = remoteState.activePersonaId || remoteState.profile.id || 'default';
+          setPersonas(remotePersonas);
+          setActivePersonaId(remoteActivePersonaId);
           setCustomCharacters(remoteState.characters);
           setScenarios(remoteState.scenarios || []);
           setThreads(remoteState.threads);
@@ -369,11 +384,45 @@ export default function App() {
   };
 
   const saveUserProfile = (profile: UserProfile) => {
-    setUserProfile(profile);
-    localStorage.setItem(USER_PROFILE_LOCAL_STORAGE_KEY, JSON.stringify(profile));
-    persistedStateRef.current = { ...persistedStateRef.current, profile };
+    const normalized = {...profile, id: profile.id || activePersonaId || 'default'};
+    const updatedPersonas = personas.some(item => item.id === normalized.id)
+      ? personas.map(item => item.id === normalized.id ? normalized : item)
+      : [...personas, normalized];
+    setUserProfile(normalized);
+    setPersonas(updatedPersonas);
+    setActivePersonaId(normalized.id);
+    localStorage.setItem(USER_PROFILE_LOCAL_STORAGE_KEY, JSON.stringify(normalized));
+    persistedStateRef.current = {...persistedStateRef.current, profile: normalized, personas: updatedPersonas, activePersonaId: normalized.id};
     queueRemoteStateSync();
   };
+
+  const persistPersonas = (updated: UserProfile[], nextActiveId: string) => {
+    const active = updated.find(item => item.id === nextActiveId) || updated[0];
+    if (!active) return;
+    setPersonas(updated);
+    setActivePersonaId(active.id || 'default');
+    setUserProfile(active);
+    localStorage.setItem(USER_PROFILE_LOCAL_STORAGE_KEY, JSON.stringify(active));
+    persistedStateRef.current = {...persistedStateRef.current, profile: active, personas: updated, activePersonaId: active.id};
+    queueRemoteStateSync();
+  };
+
+  const handleSavePersona = (persona: UserProfile, makeActive: boolean) => {
+    const updated = personas.some(item => item.id === persona.id)
+      ? personas.map(item => item.id === persona.id ? persona : item)
+      : [persona, ...personas];
+    persistPersonas(updated, makeActive ? persona.id || activePersonaId : activePersonaId);
+  };
+
+  const handleDeletePersona = (personaId: string) => {
+    const updated = personas.filter(item => item.id !== personaId);
+    if (updated.length === 0) return;
+    const nextActiveId = activePersonaId === personaId ? updated[0].id || 'default' : activePersonaId;
+    persistPersonas(updated, nextActiveId);
+    saveThreads(threads.map(thread => thread.personaId === personaId ? {...thread, personaId: nextActiveId} : thread));
+  };
+
+  const handleSetActivePersona = (personaId: string) => persistPersonas(personas, personaId);
 
   // 3. Collect active characters list & Active references
   const allCharacters = customCharacters;
@@ -384,6 +433,9 @@ export default function App() {
   const activeScenario = activeThread?.scenarioId
     ? scenarios.find(scenario => scenario.id === activeThread.scenarioId)
     : undefined;
+  const conversationProfile = personas.find(persona => persona.id === activeThread?.personaId)
+    || personas.find(persona => persona.id === activePersonaId)
+    || userProfile;
 
   const selectedCharacterId = activeThread ? activeThread.characterId : (allCharacters[0]?.id || '');
 
@@ -414,6 +466,7 @@ export default function App() {
       const newThread: ChatThread = {
         id: `thread-${charId}-${Date.now()}`,
         characterId: charId,
+        personaId: activePersonaId,
         title: char ? `与 ${char.name} 的对话` : `与 角色 的对话`,
         messages: [],
         timestamp: Date.now()
@@ -424,7 +477,7 @@ export default function App() {
     }
   };
 
-  const createNewThread = (characterId: string, scenarioId?: string) => {
+  const createNewThread = (characterId: string, scenarioId?: string, personaId?: string) => {
     const character = allCharacters.find(item => item.id === characterId);
     if (!character) return;
     const scenario = scenarioId ? scenarios.find(item => item.id === scenarioId) : undefined;
@@ -432,6 +485,7 @@ export default function App() {
       id: `thread-${character.id}-${Date.now()}`,
       characterId: character.id,
       scenarioId: scenario?.id,
+      personaId: personaId || activePersonaId,
       title: scenario ? `${character.name} · ${scenario.name}` : `与 ${character.name} 的新对话`,
       messages: [],
       timestamp: Date.now(),
@@ -557,11 +611,11 @@ export default function App() {
       // Craft specialized user persona context injection
       const userRoleplayContext = `
 【当前和你对话的用户身份设定】：
-姓名：${userProfile.name}
-${userProfile.gender ? `性别/称谓：${userProfile.gender}` : ''}
-${userProfile.personality ? `性格特质：${userProfile.personality}` : ''}
-${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
-人设背景：${userProfile.description || '一位在酒馆落脚歇息的旅人'}
+姓名：${conversationProfile.name}
+${conversationProfile.gender ? `性别/称谓：${conversationProfile.gender}` : ''}
+${conversationProfile.personality ? `性格特质：${conversationProfile.personality}` : ''}
+${conversationProfile.appearance ? `外貌外表：${conversationProfile.appearance}` : ''}
+人设背景：${conversationProfile.description || '一位在酒馆落脚歇息的旅人'}
 
 请始终根据上述设定，在故事行文中以该身份称呼、指引并对待【用户】。`;
 
@@ -713,11 +767,11 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
 
       const userRoleplayContext = `
 【当前和你对话的用户身份设定】：
-姓名：${userProfile.name}
-${userProfile.gender ? `性别/称谓：${userProfile.gender}` : ''}
-${userProfile.personality ? `性格特质：${userProfile.personality}` : ''}
-${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
-人设背景：${userProfile.description || '一位在酒馆落脚歇息的旅人'}
+姓名：${conversationProfile.name}
+${conversationProfile.gender ? `性别/称谓：${conversationProfile.gender}` : ''}
+${conversationProfile.personality ? `性格特质：${conversationProfile.personality}` : ''}
+${conversationProfile.appearance ? `外貌外表：${conversationProfile.appearance}` : ''}
+人设背景：${conversationProfile.description || '一位在酒馆落脚歇息的旅人'}
 
 请始终根据上述设定，在故事行文中以该身份称呼、指引并对待【用户】。`;
 
@@ -821,6 +875,7 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
         const newThread: ChatThread = {
           id: `thread-${Date.now()}`,
           characterId: updated[0].id,
+          personaId: activePersonaId,
           title: `与 ${updated[0].name} 的对话`,
           messages: [],
           timestamp: Date.now()
@@ -846,6 +901,7 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
         const newThread: ChatThread = {
           id: `thread-${Date.now()}`,
           characterId: allCharacters[0].id,
+          personaId: activePersonaId,
           title: `与 ${allCharacters[0].name} 的对话`,
           messages: [],
           timestamp: Date.now()
@@ -895,6 +951,7 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
       const newThread: ChatThread = {
         id: `thread-${char.id}-${Date.now()}`,
         characterId: char.id,
+        personaId: activePersonaId,
         title: `与 ${char.name} 的对话`,
         messages: [],
         timestamp: Date.now()
@@ -941,6 +998,7 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
             { id: 'chat', label: '对话', icon: 'MessageSquare' },
             { id: 'assistants', label: '角色管理', icon: 'Bot' },
             { id: 'scenarios', label: '场景管理', icon: 'BookOpen' },
+            { id: 'personas', label: '我的人设', icon: 'User' },
             { id: 'models', label: '模型服务', icon: 'Cpu' },
             { id: 'extensions', label: '功能拓展', icon: 'Settings' },
           ] as const).map((item) => {
@@ -971,9 +1029,9 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
 
         {/* User Profile quick trigger at bottom */}
         <button
-          onClick={() => setIsProfileModalOpen(true)}
+          onClick={() => setActiveTab('personas')}
           className="w-10 h-10 rounded-xl flex items-center justify-center text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900/60 transition-all cursor-pointer flex-shrink-0"
-          title="配置人设角色"
+          title="管理我的人设"
           id="nav-profile-trigger-btn"
         >
           <LucideIcon name="User" size={15} />
@@ -1007,6 +1065,7 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
                   onClick={() => {
                     setNewChatDropdownOpen(!newChatDropdownOpen);
                     if (!newChatCharacterId && allCharacters[0]) setNewChatCharacterId(allCharacters[0].id);
+                    setNewChatPersonaId(activePersonaId);
                   }}
                   className="w-full flex items-center justify-between border border-cyan-500/25 rounded-lg px-3.5 py-2.5 text-xs font-semibold text-zinc-200 bg-zinc-900 hover:bg-zinc-850 transition-all cursor-pointer shadow-sm group"
                   id="sidebar-new-chat-btn"
@@ -1042,7 +1101,8 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
                           <>
                             <label className="block space-y-1.5"><span className="text-[10px] font-semibold text-zinc-500">角色</span><select value={newChatCharacterId} onChange={event => { setNewChatCharacterId(event.target.value); setNewChatScenarioId(''); }} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-2 text-xs text-zinc-200 outline-none focus:border-cyan-500/50">{allCharacters.map(character => <option key={character.id} value={character.id}>{character.name}</option>)}</select></label>
                             <label className="block space-y-1.5"><span className="text-[10px] font-semibold text-zinc-500">场景</span><select value={newChatScenarioId} onChange={event => setNewChatScenarioId(event.target.value)} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-2 text-xs text-zinc-200 outline-none focus:border-cyan-500/50"><option value="">使用角色默认环境</option>{availableNewChatScenarios.map(scenario => <option key={scenario.id} value={scenario.id}>{scenario.name}{scenario.characterId ? ' · 专属' : ' · 通用'}</option>)}</select></label>
-                            <button onClick={() => createNewThread(newChatCharacterId, newChatScenarioId || undefined)} className="w-full rounded-lg bg-cyan-500 px-3 py-2 text-xs font-bold text-zinc-950 hover:bg-cyan-400">创建对话</button>
+                            <label className="block space-y-1.5"><span className="text-[10px] font-semibold text-zinc-500">我的人设</span><select value={newChatPersonaId} onChange={event => setNewChatPersonaId(event.target.value)} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-2 text-xs text-zinc-200 outline-none focus:border-cyan-500/50">{personas.map(persona => <option key={persona.id} value={persona.id}>{persona.name}{persona.id === activePersonaId ? ' · 当前' : ''}</option>)}</select></label>
+                            <button onClick={() => createNewThread(newChatCharacterId, newChatScenarioId || undefined, newChatPersonaId)} className="w-full rounded-lg bg-cyan-500 px-3 py-2 text-xs font-bold text-zinc-950 hover:bg-cyan-400">创建对话</button>
                           </>
                         )}
                       </div>
@@ -1202,9 +1262,9 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
 
               <div className="p-3 border-t border-[#303030]/40 bg-[#141414] mt-auto">
                 <button
-                  onClick={() => setIsProfileModalOpen(true)}
+                  onClick={() => setActiveTab('personas')}
                   className="w-full flex items-center justify-between p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-850 border border-zinc-800/40 transition-all cursor-pointer group text-left"
-                  title="配置你的扮演人设"
+                  title="管理我的扮演人设"
                   id="sidebar-user-identity-profile-btn"
                 >
                   <div className="flex items-center space-x-2.5 overflow-hidden">
@@ -1216,7 +1276,7 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
                         我是「{userProfile.name}」
                       </span>
                       <span className="block text-[9px] text-zinc-500 truncate mt-0.5">
-                        查看/编辑我的扮演设定
+                        管理和切换我的人设
                       </span>
                     </div>
                   </div>
@@ -1257,7 +1317,7 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
                 onDeleteMessage={handleDeleteMessage}
                 onReroll={handleReroll}
                 isLoading={isLoading}
-                userProfile={userProfile}
+                userProfile={conversationProfile}
                 sidebarOpen={sidebarOpen}
                 onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
                 onOpenCharacterModal={handleOpenNewCharacterModal}
@@ -1301,7 +1361,20 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
         />
       )}
 
-      {/* 5. MODELS CONFIGURATION WORKSPACE */}
+      {/* 5. USER PERSONAS MANAGEMENT */}
+      {activeTab === 'personas' && (
+        <PersonasDashboard
+          personas={personas}
+          activePersonaId={activePersonaId}
+          onSave={handleSavePersona}
+          onDelete={handleDeletePersona}
+          onSetActive={handleSetActivePersona}
+          middlePanelWidth={middlePanelWidth}
+          onMiddlePanelResizeStart={handleMiddlePanelResizeStart}
+        />
+      )}
+
+      {/* 6. MODELS CONFIGURATION WORKSPACE */}
       {activeTab === 'models' && (
         <ModelsDashboard
           userProfile={userProfile}
@@ -1327,14 +1400,6 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
           characters={allCharacters}
         />
       )}
-
-      {/* User profile setting modal */}
-      <UserProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-        profile={userProfile}
-        onSave={saveUserProfile}
-      />
 
       {/* Character designer modal (Supports both edit and create) */}
       <CharacterModal
