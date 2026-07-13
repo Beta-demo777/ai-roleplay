@@ -178,6 +178,7 @@ def replace_state(payload: AppStateSchema, db: Session = Depends(get_db)) -> App
         )
 
     character_ids = {item.id for item in payload.characters}
+    db.flush()
     for item in payload.scenarios:
         db.add(
             DialogueScenario(
@@ -198,6 +199,8 @@ def replace_state(payload: AppStateSchema, db: Session = Depends(get_db)) -> App
         )
 
     scenario_ids = {item.id for item in payload.scenarios}
+    db.flush()
+    valid_threads = []
     for thread in payload.threads:
         if thread.character_id not in character_ids:
             continue
@@ -211,6 +214,10 @@ def replace_state(payload: AppStateSchema, db: Session = Depends(get_db)) -> App
                 timestamp=thread.timestamp,
             )
         )
+        valid_threads.append(thread)
+
+    db.flush()
+    for thread in valid_threads:
         for position, message in enumerate(thread.messages):
             db.add(
                 ChatMessage(

@@ -10,9 +10,10 @@ import ExtensionsDashboard from './components/ExtensionsDashboard';
 import PersonasDashboard from './components/PersonasDashboard';
 import MiddlePanelResizeHandle from './components/MiddlePanelResizeHandle';
 import { getActiveModelServiceConfig } from './modelService';
-import { loadRemoteAppState, PersistedAppState, saveRemoteAppState } from './stateApi';
+import { loadRemoteAppState, PersistedAppState, saveRemoteAppState, saveRemoteAppStateOnPageExit } from './stateApi';
 import {FeatureSettings, loadFeatureSettings, saveFeatureSettings} from './featureSettings';
 import {buildScenarioInstruction} from './scenarioPrompt';
+import {mergeChatThreads} from './threadState';
 
 const THREADS_LOCAL_STORAGE_KEY = 'aura_tavern_threads_v2';
 const SESSIONS_LOCAL_STORAGE_KEY = 'aura_tavern_sessions_v1';
@@ -330,6 +331,10 @@ export default function App() {
             remoteState = await saveRemoteAppState({...remoteState, scenarios: loadedScenarios});
             localStorage.removeItem(LEGACY_SCENARIOS_LOCAL_STORAGE_KEY);
           }
+          const mergedThreads = mergeChatThreads(loadedThreads, remoteState.threads);
+          if (JSON.stringify(mergedThreads) !== JSON.stringify(remoteState.threads)) {
+            remoteState = await saveRemoteAppState({...remoteState, threads: mergedThreads});
+          }
           persistedStateRef.current = remoteState;
           setUserProfile(remoteState.profile);
           const remotePersonas = remoteState.personas?.length ? remoteState.personas : [remoteState.profile];
@@ -356,8 +361,15 @@ export default function App() {
     };
     hydrateFromBackend();
 
+    const flushStateBeforeExit = () => {
+      if (stateSyncTimerRef.current) clearTimeout(stateSyncTimerRef.current);
+      saveRemoteAppStateOnPageExit(persistedStateRef.current);
+    };
+    window.addEventListener('pagehide', flushStateBeforeExit);
+
     return () => {
       if (stateSyncTimerRef.current) clearTimeout(stateSyncTimerRef.current);
+      window.removeEventListener('pagehide', flushStateBeforeExit);
     };
   }, []);
 

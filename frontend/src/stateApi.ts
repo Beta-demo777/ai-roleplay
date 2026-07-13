@@ -31,3 +31,12 @@ export async function saveRemoteAppState(state: PersistedAppState): Promise<Pers
     body: JSON.stringify(state),
   }));
 }
+
+export function saveRemoteAppStateOnPageExit(state: PersistedAppState): void {
+  void fetch(STATE_API_URL, {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(state),
+    keepalive: true,
+  });
+}

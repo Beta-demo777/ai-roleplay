@@ -1,6 +1,6 @@
 import unittest
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
@@ -19,6 +19,7 @@ class StateApiTest(unittest.TestCase):
         )
         Base.metadata.create_all(self.engine)
         self.db = Session(self.engine)
+        self.db.execute(text("PRAGMA foreign_keys=ON"))
 
     def tearDown(self):
         self.db.close()
