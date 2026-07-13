@@ -47,10 +47,21 @@ class StateApiTest(unittest.TestCase):
                         "starters": ["开始吧"],
                     }
                 ],
+                "scenarios": [
+                    {
+                        "id": "scenario-test",
+                        "name": "雨夜酒馆",
+                        "characterId": "char-test",
+                        "location": "旧城酒馆",
+                        "atmosphere": "安静而昏暗",
+                        "openingContext": "双方在吧台相遇",
+                    }
+                ],
                 "threads": [
                     {
                         "id": "thread-test",
                         "characterId": "char-test",
+                        "scenarioId": "scenario-test",
                         "title": "测试对话",
                         "timestamp": 1,
                         "messages": [
@@ -69,6 +80,8 @@ class StateApiTest(unittest.TestCase):
         state = replace_state(payload, self.db)
         self.assertEqual(state.profile.name, "旅人")
         self.assertEqual(state.characters[0].first_message, "你好")
+        self.assertEqual(state.scenarios[0].location, "旧城酒馆")
+        self.assertEqual(state.threads[0].scenario_id, "scenario-test")
         self.assertEqual(state.threads[0].messages[0].content, "你好")
 
         loaded = get_state(self.db)

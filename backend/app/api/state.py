@@ -6,10 +6,11 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.core.auth import require_auth
-from app.models import Character, ChatMessage, ChatThread, UserProfile
+from app.models import Character, ChatMessage, ChatThread, DialogueScenario, UserProfile
 from app.schemas.state import (
     AppStateSchema,
     CharacterSchema,
+    DialogueScenarioSchema,
     ChatThreadSchema,
     MessageSchema,
     UserProfileSchema,
@@ -49,10 +50,29 @@ def serialize_character(character: Character) -> CharacterSchema:
     )
 
 
+def serialize_scenario(scenario: DialogueScenario) -> DialogueScenarioSchema:
+    return DialogueScenarioSchema(
+        id=scenario.id,
+        name=scenario.name,
+        description=scenario.description,
+        characterId=scenario.character_id,
+        location=scenario.location,
+        timePeriod=scenario.time_period,
+        atmosphere=scenario.atmosphere,
+        worldBackground=scenario.world_background,
+        relationship=scenario.relationship,
+        openingContext=scenario.opening_context,
+        plotHooks=scenario.plot_hooks,
+        sceneRules=scenario.scene_rules,
+        prompt=scenario.prompt,
+    )
+
+
 def serialize_thread(thread: ChatThread, messages: List[ChatMessage]) -> ChatThreadSchema:
     return ChatThreadSchema(
         id=thread.id,
         characterId=thread.character_id,
+        scenarioId=thread.scenario_id,
         title=thread.title,
         timestamp=thread.timestamp,
         messages=[
@@ -82,6 +102,7 @@ def get_state(db: Session = Depends(get_db)) -> AppStateSchema:
         db.refresh(profile)
 
     characters = list(db.scalars(select(Character).order_by(Character.created_at)).all())
+    scenarios = list(db.scalars(select(DialogueScenario).order_by(DialogueScenario.created_at)).all())
     threads = list(db.scalars(select(ChatThread).order_by(ChatThread.timestamp.desc())).all())
     messages = list(
         db.scalars(
@@ -96,6 +117,7 @@ def get_state(db: Session = Depends(get_db)) -> AppStateSchema:
         initialized=profile.is_initialized,
         profile=serialize_profile(profile),
         characters=[serialize_character(character) for character in characters],
+        scenarios=[serialize_scenario(scenario) for scenario in scenarios],
         threads=[serialize_thread(thread, messages_by_thread.get(thread.id, [])) for thread in threads],
     )
 
@@ -104,6 +126,7 @@ def get_state(db: Session = Depends(get_db)) -> AppStateSchema:
 def replace_state(payload: AppStateSchema, db: Session = Depends(get_db)) -> AppStateSchema:
     db.execute(delete(ChatMessage))
     db.execute(delete(ChatThread))
+    db.execute(delete(DialogueScenario))
     db.execute(delete(Character))
 
     profile = db.get(UserProfile, "default")
@@ -136,6 +159,26 @@ def replace_state(payload: AppStateSchema, db: Session = Depends(get_db)) -> App
         )
 
     character_ids = {item.id for item in payload.characters}
+    for item in payload.scenarios:
+        db.add(
+            DialogueScenario(
+                id=item.id,
+                name=item.name,
+                description=item.description,
+                character_id=item.character_id if item.character_id in character_ids else None,
+                location=item.location,
+                time_period=item.time_period,
+                atmosphere=item.atmosphere,
+                world_background=item.world_background,
+                relationship=item.relationship,
+                opening_context=item.opening_context,
+                plot_hooks=item.plot_hooks,
+                scene_rules=item.scene_rules,
+                prompt=item.prompt,
+            )
+        )
+
+    scenario_ids = {item.id for item in payload.scenarios}
     for thread in payload.threads:
         if thread.character_id not in character_ids:
             continue
@@ -143,6 +186,7 @@ def replace_state(payload: AppStateSchema, db: Session = Depends(get_db)) -> App
             ChatThread(
                 id=thread.id,
                 character_id=thread.character_id,
+                scenario_id=thread.scenario_id if thread.scenario_id in scenario_ids else None,
                 title=thread.title,
                 timestamp=thread.timestamp,
             )

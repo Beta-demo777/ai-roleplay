@@ -63,7 +63,7 @@ export default function CharacterModal({ isOpen, onClose, onSave, editingCharact
 2. 【动作描述与独白】：使用星号 * * 包裹你的动作、神态、心理描写或场景变化，生动表现文字画卷。例如：*微微侧过头看向你，眼中闪过一抹微光*。
 3. 【对话输出风格】：标准对话不要加星号，普通交谈即可，让文字富有小说般的质感。
 4. 【人设配合】：${personality.trim() || '你有着独特的个性和背景，请忠实于你的人物设定进行互动。'}
-5. 【当前场景】：${scenario.trim() || '在专属场景里与对方相遇，正在展开一次富有深度的精彩对谈。'}`;
+5. 【默认登场环境】：${scenario.trim() || '未指定；优先遵循对话线程绑定的场景设定。'}`;
 
     setSystemInstruction(generatedPrompt);
   };
@@ -76,7 +76,7 @@ export default function CharacterModal({ isOpen, onClose, onSave, editingCharact
     let finalInstruction = systemInstruction;
     if (!finalInstruction.trim()) {
       finalInstruction = `你现在需要完全扮演角色【${name.trim()}】。
-始终使用第一人称叙述，使用星号 * * 描述肢体语言和心理活动。当前场景设定是：${scenario.trim() || '专属对话环境'}。
+始终使用第一人称叙述，使用星号 * * 描述肢体语言和心理活动。默认登场环境是：${scenario.trim() || '未指定，遵循本次对话场景'}。
 性格设定是：${personality.trim()}`;
     }
 
@@ -84,13 +84,14 @@ export default function CharacterModal({ isOpen, onClose, onSave, editingCharact
       id: editingCharacter ? editingCharacter.id : `char-${Date.now()}`,
       name: name.trim(),
       tagline: tagline.trim(),
-      avatar: 'Bot',
+      avatar,
       category,
       personality: personality.trim(),
       scenario: scenario.trim(),
       firstMessage: firstMessage.trim(),
       systemInstruction: finalInstruction.trim(),
-      isCustom: true
+      isCustom: true,
+      starters: editingCharacter?.starters || [],
     };
 
     onSave(savedCharacter);
@@ -183,8 +184,8 @@ export default function CharacterModal({ isOpen, onClose, onSave, editingCharact
           {/* Scenario Description */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-zinc-400">当前对话环境/场景 (Scenario)</label>
-              <span className="text-[10px] text-zinc-500">交代当前在哪、在做什么</span>
+              <label className="text-xs font-semibold text-zinc-400">默认登场环境</label>
+              <span className="text-[10px] text-zinc-500">仅在未选择独立对话场景时使用</span>
             </div>
             <textarea
               rows={2}

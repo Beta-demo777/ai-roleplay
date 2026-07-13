@@ -21,6 +21,22 @@ export interface UserProfile {
   appearance?: string; // 容貌外表
 }
 
+export interface DialogueScenario {
+  id: string;
+  name: string;
+  description: string;
+  characterId?: string;
+  location: string;
+  timePeriod: string;
+  atmosphere: string;
+  worldBackground: string;
+  relationship: string;
+  openingContext: string;
+  plotHooks: string;
+  sceneRules: string;
+  prompt: string;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -31,6 +47,7 @@ export interface Message {
 export interface ChatThread {
   id: string;
   characterId: string;
+  scenarioId?: string;
   title: string;
   messages: Message[];
   timestamp: number;

@@ -1,9 +1,10 @@
-import { Character, ChatThread, UserProfile } from './types';
+import { Character, ChatThread, DialogueScenario, UserProfile } from './types';
 
 export interface PersistedAppState {
   initialized?: boolean;
   profile: UserProfile;
   characters: Character[];
+  scenarios: DialogueScenario[];
   threads: ChatThread[];
 }
 

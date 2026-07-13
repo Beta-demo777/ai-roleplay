@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
@@ -14,6 +15,9 @@ class ChatThread(Base):
         ForeignKey("characters.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
+    )
+    scenario_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("dialogue_scenarios.id", ondelete="SET NULL"), nullable=True, index=True
     )
     title: Mapped[str] = mapped_column(String(300), nullable=False)
     timestamp: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)

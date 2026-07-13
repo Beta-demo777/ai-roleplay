@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Character, Message, UserProfile } from '../types';
+import { Character, DialogueScenario, Message, UserProfile } from '../types';
 import LucideIcon from './LucideIcon';
 import { getActiveModelServiceConfig } from '../modelService';
 import {FeatureSettings, resolveCharacterVoiceSettings} from '../featureSettings';
@@ -7,6 +7,7 @@ import {useTtsPlayer} from '../tts/useTtsPlayer';
 
 interface ChatWorkspaceProps {
   character?: Character;
+  scenario?: DialogueScenario;
   messages: Message[];
   onSendMessage: (text: string) => void;
   onClearHistory: () => void;
@@ -62,6 +63,7 @@ function RoleplayFormatter({ content, alignment = 'left' }: { content: string; a
 
 export default function ChatWorkspace({
   character,
+  scenario,
   messages,
   onSendMessage,
   onClearHistory,
@@ -76,6 +78,9 @@ export default function ChatWorkspace({
   featureSettings,
 }: ChatWorkspaceProps) {
   const [inputText, setInputText] = useState('');
+  const sceneSummary = scenario
+    ? [scenario.location, scenario.timePeriod, scenario.atmosphere, scenario.openingContext].filter(Boolean).join(' · ')
+    : character?.scenario || '';
   const [showInspector, setShowInspector] = useState(false);
 
   // Interactive roleplay helpers states
@@ -393,7 +398,7 @@ export default function ChatWorkspace({
               </div>
               <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl space-y-1">
                 <span className="font-bold text-zinc-300 block mb-1">【演绎场景 Context Scenario】</span>
-                <p className="text-zinc-400 leading-relaxed whitespace-pre-wrap">{character.scenario}</p>
+                <p className="text-zinc-400 leading-relaxed whitespace-pre-wrap">{scenario ? `${scenario.name}\n${sceneSummary}\n${scenario.worldBackground}` : character.scenario}</p>
               </div>
             </div>
 
@@ -422,7 +427,7 @@ export default function ChatWorkspace({
                   已成功载入角色设定：{character.name}
                 </h2>
                 <p className="text-xs text-zinc-400 max-w-md leading-relaxed">
-                  “{character.tagline}”
+                  “{character.tagline}”{scenario && <span className="ml-2 text-cyan-500">· {scenario.name}</span>}
                 </p>
               </div>
 
@@ -430,7 +435,7 @@ export default function ChatWorkspace({
               <div className="p-3.5 bg-zinc-900/60 border border-zinc-800 rounded-xl text-xs text-zinc-400 max-w-lg leading-relaxed text-left relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-16 h-16 bg-cyan-500/5 rounded-full blur-xl pointer-events-none" />
                 <span className="font-semibold text-cyan-400 block mb-1">📍 正在发生的故事位面场景：</span>
-                {character.scenario}
+                {sceneSummary || '尚未设置当前对话场景。'}
               </div>
             </div>
 

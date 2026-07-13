@@ -1,41 +1,14 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {BookOpenText, MapPinned, Plus, Save, Search, Trash2} from 'lucide-react';
-import {Character} from '../types';
+import {BookOpenText, MapPinned, MessageSquare, Plus, Save, Search, Trash2} from 'lucide-react';
+import {Character, DialogueScenario} from '../types';
 import MiddlePanelResizeHandle from './MiddlePanelResizeHandle';
-
-const SCENARIOS_STORAGE_KEY = 'aura_dialogue_scenarios_v2';
-const LEGACY_SCENARIOS_STORAGE_KEY = 'aura_training_scenarios_v1';
-
-interface DialogueScenario {
-  id: string;
-  name: string;
-  description: string;
-  characterId: string;
-  location: string;
-  timePeriod: string;
-  atmosphere: string;
-  worldBackground: string;
-  relationship: string;
-  openingContext: string;
-  plotHooks: string;
-  sceneRules: string;
-  prompt: string;
-}
-
-interface LegacyTrainingScenario {
-  id?: string;
-  name?: string;
-  description?: string;
-  characterId?: string;
-  userRole?: string;
-  aiRole?: string;
-  objectives?: string;
-  openingContext?: string;
-  completionCriteria?: string;
-}
 
 interface ScenariosDashboardProps {
   characters: Character[];
+  scenarios: DialogueScenario[];
+  onSaveScenario: (scenario: DialogueScenario) => void;
+  onDeleteScenario: (scenarioId: string) => void;
+  onStartConversation: (scenario: DialogueScenario) => void;
   middlePanelWidth: number;
   onMiddlePanelResizeStart: (event: React.PointerEvent<HTMLDivElement>) => void;
 }
@@ -56,46 +29,8 @@ const emptyScenario = (characters: Character[]): DialogueScenario => ({
   prompt: '',
 });
 
-function migrateLegacyScenario(item: LegacyTrainingScenario): DialogueScenario {
-  const relationship = [
-    item.userRole ? `用户身份：${item.userRole}` : '',
-    item.aiRole ? `角色身份：${item.aiRole}` : '',
-  ].filter(Boolean).join('\n');
-  return {
-    id: item.id || `scenario-${Date.now()}`,
-    name: item.name || '未命名场景',
-    description: item.description || '',
-    characterId: item.characterId || '',
-    location: '',
-    timePeriod: '',
-    atmosphere: '',
-    worldBackground: '',
-    relationship,
-    openingContext: item.openingContext || '',
-    plotHooks: item.objectives || '',
-    sceneRules: item.completionCriteria || '',
-    prompt: '',
-  };
-}
-
-function loadScenarios(): DialogueScenario[] {
-  try {
-    const current = JSON.parse(localStorage.getItem(SCENARIOS_STORAGE_KEY) || '[]');
-    if (Array.isArray(current) && current.length > 0) return current;
-    const legacy = JSON.parse(localStorage.getItem(LEGACY_SCENARIOS_STORAGE_KEY) || '[]');
-    if (!Array.isArray(legacy) || legacy.length === 0) return [];
-    const migrated = legacy.map(migrateLegacyScenario);
-    localStorage.setItem(SCENARIOS_STORAGE_KEY, JSON.stringify(migrated));
-    localStorage.removeItem(LEGACY_SCENARIOS_STORAGE_KEY);
-    return migrated;
-  } catch {
-    return [];
-  }
-}
-
-export default function ScenariosDashboard({characters, middlePanelWidth, onMiddlePanelResizeStart}: ScenariosDashboardProps) {
-  const [scenarios, setScenarios] = useState<DialogueScenario[]>(loadScenarios);
-  const [selectedId, setSelectedId] = useState(() => loadScenarios()[0]?.id || '');
+export default function ScenariosDashboard({characters, scenarios, onSaveScenario, onDeleteScenario, onStartConversation, middlePanelWidth, onMiddlePanelResizeStart}: ScenariosDashboardProps) {
+  const [selectedId, setSelectedId] = useState(() => scenarios[0]?.id || '');
   const [searchQuery, setSearchQuery] = useState('');
   const [draft, setDraft] = useState<DialogueScenario>(() => emptyScenario(characters));
   const [saved, setSaved] = useState(false);
@@ -104,6 +39,10 @@ export default function ScenariosDashboard({characters, middlePanelWidth, onMidd
     const selected = scenarios.find(item => item.id === selectedId);
     setDraft(selected ? {...selected} : emptyScenario(characters));
   }, [selectedId, scenarios, characters]);
+
+  useEffect(() => {
+    if (selectedId && !scenarios.some(item => item.id === selectedId)) setSelectedId(scenarios[0]?.id || '');
+  }, [scenarios, selectedId]);
 
   const filtered = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -119,12 +58,8 @@ export default function ScenariosDashboard({characters, middlePanelWidth, onMidd
     event.preventDefault();
     if (!draft.name.trim()) return;
     const next = {...draft, id: draft.id || `scenario-${Date.now()}`, name: draft.name.trim()};
-    const updated = scenarios.some(item => item.id === next.id)
-      ? scenarios.map(item => item.id === next.id ? next : item)
-      : [next, ...scenarios];
-    setScenarios(updated);
+    onSaveScenario(next);
     setSelectedId(next.id);
-    localStorage.setItem(SCENARIOS_STORAGE_KEY, JSON.stringify(updated));
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1600);
   };
@@ -136,10 +71,7 @@ export default function ScenariosDashboard({characters, middlePanelWidth, onMidd
 
   const deleteScenario = () => {
     if (!draft.id || !window.confirm(`确定删除场景「${draft.name}」吗？`)) return;
-    const updated = scenarios.filter(item => item.id !== draft.id);
-    setScenarios(updated);
-    setSelectedId(updated[0]?.id || '');
-    localStorage.setItem(SCENARIOS_STORAGE_KEY, JSON.stringify(updated));
+    onDeleteScenario(draft.id);
   };
 
   return (
@@ -189,7 +121,10 @@ export default function ScenariosDashboard({characters, middlePanelWidth, onMidd
           <Field label="场景补充提示词"><textarea value={draft.prompt} onChange={event => updateDraft('prompt', event.target.value)} rows={5} placeholder="注入对话 Prompt 的补充指令，例如叙事风格、信息披露节奏和场景演绎要求" className="field-input resize-none font-mono" /></Field>
           <div className="flex items-center justify-between border-t border-zinc-800 pt-5">
             <div>{draft.id && <button type="button" onClick={deleteScenario} className="flex items-center gap-1.5 rounded-lg border border-rose-500/20 px-4 py-2 text-xs text-rose-400 hover:bg-rose-500/10"><Trash2 size={13} />删除场景</button>}</div>
-            <button type="submit" className="flex items-center gap-1.5 rounded-lg bg-cyan-500 px-5 py-2 text-xs font-semibold text-zinc-950 hover:bg-cyan-400"><Save size={13} />保存场景</button>
+            <div className="flex items-center gap-2">
+              {draft.id && <button type="button" onClick={() => onStartConversation(draft)} className="flex items-center gap-1.5 rounded-lg border border-cyan-500/25 px-4 py-2 text-xs font-semibold text-cyan-400 hover:bg-cyan-500/10"><MessageSquare size={13} />使用此场景对话</button>}
+              <button type="submit" className="flex items-center gap-1.5 rounded-lg bg-cyan-500 px-5 py-2 text-xs font-semibold text-zinc-950 hover:bg-cyan-400"><Save size={13} />保存场景</button>
+            </div>
           </div>
         </form>
       </main>

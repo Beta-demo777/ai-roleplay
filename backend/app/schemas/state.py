@@ -37,11 +37,30 @@ class MessageSchema(BaseModel):
     timestamp: int
 
 
+class DialogueScenarioSchema(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str = Field(min_length=1, max_length=160)
+    name: str = Field(min_length=1, max_length=200)
+    description: str = ""
+    character_id: Optional[str] = Field(default=None, alias="characterId", max_length=120)
+    location: str = ""
+    time_period: str = Field(default="", alias="timePeriod")
+    atmosphere: str = ""
+    world_background: str = Field(default="", alias="worldBackground")
+    relationship: str = ""
+    opening_context: str = Field(default="", alias="openingContext")
+    plot_hooks: str = Field(default="", alias="plotHooks")
+    scene_rules: str = Field(default="", alias="sceneRules")
+    prompt: str = ""
+
+
 class ChatThreadSchema(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     id: str = Field(min_length=1, max_length=160)
     character_id: str = Field(alias="characterId", min_length=1, max_length=120)
+    scenario_id: Optional[str] = Field(default=None, alias="scenarioId", max_length=160)
     title: str = Field(min_length=1, max_length=300)
     messages: List[MessageSchema] = Field(default_factory=list)
     timestamp: int
@@ -51,4 +70,5 @@ class AppStateSchema(BaseModel):
     initialized: bool = False
     profile: UserProfileSchema
     characters: List[CharacterSchema]
+    scenarios: List[DialogueScenarioSchema] = Field(default_factory=list)
     threads: List[ChatThreadSchema]

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Character, Message, UserProfile, ChatThread } from './types';
+import { Character, Message, UserProfile, ChatThread, DialogueScenario } from './types';
 import LucideIcon from './components/LucideIcon';
 import ChatWorkspace from './components/ChatWorkspace';
 import CharacterModal from './components/CharacterModal';
@@ -12,11 +12,14 @@ import MiddlePanelResizeHandle from './components/MiddlePanelResizeHandle';
 import { getActiveModelServiceConfig } from './modelService';
 import { loadRemoteAppState, PersistedAppState, saveRemoteAppState } from './stateApi';
 import {FeatureSettings, loadFeatureSettings, saveFeatureSettings} from './featureSettings';
+import {buildScenarioInstruction} from './scenarioPrompt';
 
 const THREADS_LOCAL_STORAGE_KEY = 'aura_tavern_threads_v2';
 const SESSIONS_LOCAL_STORAGE_KEY = 'aura_tavern_sessions_v1';
 const CUSTOM_CHARACTERS_LOCAL_STORAGE_KEY = 'aura_tavern_custom_characters_v1';
 const USER_PROFILE_LOCAL_STORAGE_KEY = 'aura_tavern_user_profile_v1';
+const SCENARIOS_LOCAL_STORAGE_KEY = 'aura_dialogue_scenarios_v2';
+const LEGACY_SCENARIOS_LOCAL_STORAGE_KEY = 'aura_training_scenarios_v1';
 const MIDDLE_PANEL_WIDTH_LOCAL_STORAGE_KEY = 'aura_middle_panel_width_v1';
 const DEFAULT_MIDDLE_PANEL_WIDTH = 280;
 const MIN_MIDDLE_PANEL_WIDTH = 220;
@@ -26,9 +29,36 @@ const clampMiddlePanelWidth = (width: number) => (
   Math.min(MAX_MIDDLE_PANEL_WIDTH, Math.max(MIN_MIDDLE_PANEL_WIDTH, width))
 );
 
+function loadLocalScenarios(): DialogueScenario[] {
+  try {
+    const current = JSON.parse(localStorage.getItem(SCENARIOS_LOCAL_STORAGE_KEY) || '[]');
+    if (Array.isArray(current) && current.length > 0) return current;
+    const legacy = JSON.parse(localStorage.getItem(LEGACY_SCENARIOS_LOCAL_STORAGE_KEY) || '[]');
+    if (!Array.isArray(legacy)) return [];
+    return legacy.map((item, index) => ({
+      id: item.id || `scenario-migrated-${Date.now()}-${index}`,
+      name: item.name || '未命名场景',
+      description: item.description || '',
+      characterId: item.characterId || undefined,
+      location: '',
+      timePeriod: '',
+      atmosphere: '',
+      worldBackground: '',
+      relationship: [item.userRole ? `用户身份：${item.userRole}` : '', item.aiRole ? `角色身份：${item.aiRole}` : ''].filter(Boolean).join('\n'),
+      openingContext: item.openingContext || '',
+      plotHooks: item.objectives || '',
+      sceneRules: item.completionCriteria || '',
+      prompt: '',
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export default function App() {
   // Characters state (preset + custom)
   const [customCharacters, setCustomCharacters] = useState<Character[]>([]);
+  const [scenarios, setScenarios] = useState<DialogueScenario[]>([]);
   const [selectedCharacterIdState, setSelectedCharacterIdState] = useState<string>('');
 
   // User custom profile
@@ -61,6 +91,7 @@ export default function App() {
   const persistedStateRef = useRef<PersistedAppState>({
     profile: userProfile,
     characters: [],
+    scenarios: [],
     threads: [],
   });
 
@@ -128,6 +159,8 @@ export default function App() {
 
   // Dropdowns & Popovers
   const [newChatDropdownOpen, setNewChatDropdownOpen] = useState(false);
+  const [newChatCharacterId, setNewChatCharacterId] = useState('');
+  const [newChatScenarioId, setNewChatScenarioId] = useState('');
 
   // Modals
   const [isCharacterModalOpen, setIsCharacterModalOpen] = useState(false);
@@ -210,6 +243,10 @@ export default function App() {
       }
     }
 
+    const loadedScenarios = loadLocalScenarios();
+    setScenarios(loadedScenarios);
+    localStorage.setItem(SCENARIOS_LOCAL_STORAGE_KEY, JSON.stringify(loadedScenarios));
+
     // Load Threads & Sessions fallback
     const savedThreads = localStorage.getItem(THREADS_LOCAL_STORAGE_KEY);
     let loadedThreads: ChatThread[] = [];
@@ -269,25 +306,33 @@ export default function App() {
       initialized: true,
       profile: loadedProfile,
       characters: loadedCharacters,
+      scenarios: loadedScenarios,
       threads: loadedThreads,
     };
     persistedStateRef.current = localState;
 
     const hydrateFromBackend = async () => {
       try {
-        const remoteState = await loadRemoteAppState();
+        let remoteState = await loadRemoteAppState();
         if (remoteState.initialized) {
+          if ((remoteState.scenarios || []).length === 0 && loadedScenarios.length > 0) {
+            remoteState = await saveRemoteAppState({...remoteState, scenarios: loadedScenarios});
+            localStorage.removeItem(LEGACY_SCENARIOS_LOCAL_STORAGE_KEY);
+          }
           persistedStateRef.current = remoteState;
           setUserProfile(remoteState.profile);
           setCustomCharacters(remoteState.characters);
+          setScenarios(remoteState.scenarios || []);
           setThreads(remoteState.threads);
           setSelectedThreadId(remoteState.threads[0]?.id || '');
           localStorage.setItem(USER_PROFILE_LOCAL_STORAGE_KEY, JSON.stringify(remoteState.profile));
           localStorage.setItem(CUSTOM_CHARACTERS_LOCAL_STORAGE_KEY, JSON.stringify(remoteState.characters));
+          localStorage.setItem(SCENARIOS_LOCAL_STORAGE_KEY, JSON.stringify(remoteState.scenarios || []));
           localStorage.setItem(THREADS_LOCAL_STORAGE_KEY, JSON.stringify(remoteState.threads));
         } else {
           const importedState = await saveRemoteAppState(localState);
           persistedStateRef.current = importedState;
+          localStorage.removeItem(LEGACY_SCENARIOS_LOCAL_STORAGE_KEY);
         }
         backendStateReadyRef.current = true;
       } catch (error) {
@@ -316,6 +361,13 @@ export default function App() {
     queueRemoteStateSync();
   };
 
+  const saveScenarios = (updated: DialogueScenario[]) => {
+    setScenarios(updated);
+    localStorage.setItem(SCENARIOS_LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    persistedStateRef.current = {...persistedStateRef.current, scenarios: updated};
+    queueRemoteStateSync();
+  };
+
   const saveUserProfile = (profile: UserProfile) => {
     setUserProfile(profile);
     localStorage.setItem(USER_PROFILE_LOCAL_STORAGE_KEY, JSON.stringify(profile));
@@ -329,6 +381,9 @@ export default function App() {
   const activeCharacter = activeThread
     ? (allCharacters.find(c => c.id === activeThread.characterId) || allCharacters[0])
     : allCharacters[0];
+  const activeScenario = activeThread?.scenarioId
+    ? scenarios.find(scenario => scenario.id === activeThread.scenarioId)
+    : undefined;
 
   const selectedCharacterId = activeThread ? activeThread.characterId : (allCharacters[0]?.id || '');
 
@@ -367,6 +422,46 @@ export default function App() {
       saveThreads(updatedThreads);
       setSelectedThreadId(newThread.id);
     }
+  };
+
+  const createNewThread = (characterId: string, scenarioId?: string) => {
+    const character = allCharacters.find(item => item.id === characterId);
+    if (!character) return;
+    const scenario = scenarioId ? scenarios.find(item => item.id === scenarioId) : undefined;
+    const newThread: ChatThread = {
+      id: `thread-${character.id}-${Date.now()}`,
+      characterId: character.id,
+      scenarioId: scenario?.id,
+      title: scenario ? `${character.name} · ${scenario.name}` : `与 ${character.name} 的新对话`,
+      messages: [],
+      timestamp: Date.now(),
+    };
+    saveThreads([newThread, ...threads]);
+    setSelectedThreadId(newThread.id);
+    setNewChatDropdownOpen(false);
+    setActiveTab('chat');
+    if (window.innerWidth < 768) setSidebarOpen(false);
+  };
+
+  const availableNewChatScenarios = scenarios.filter(
+    scenario => !scenario.characterId || scenario.characterId === newChatCharacterId,
+  );
+
+  const handleSaveScenario = (scenario: DialogueScenario) => {
+    const updated = scenarios.some(item => item.id === scenario.id)
+      ? scenarios.map(item => item.id === scenario.id ? scenario : item)
+      : [scenario, ...scenarios];
+    saveScenarios(updated);
+  };
+
+  const handleDeleteScenario = (scenarioId: string) => {
+    saveScenarios(scenarios.filter(item => item.id !== scenarioId));
+    saveThreads(threads.map(thread => thread.scenarioId === scenarioId ? {...thread, scenarioId: undefined} : thread));
+  };
+
+  const handleStartScenarioConversation = (scenario: DialogueScenario) => {
+    const characterId = scenario.characterId || selectedCharacterId || allCharacters[0]?.id;
+    if (characterId) createNewThread(characterId, scenario.id);
   };
 
   // Helper to retrieve the text content of the last message in a session (stripping action descriptors for a clean preview)
@@ -470,7 +565,8 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
 
 请始终根据上述设定，在故事行文中以该身份称呼、指引并对待【用户】。`;
 
-      const finalSystemInstruction = `${activeCharacter.systemInstruction}\n\n${userRoleplayContext}`;
+      const scenarioInstruction = buildScenarioInstruction(activeScenario);
+      const finalSystemInstruction = [activeCharacter.systemInstruction, scenarioInstruction, userRoleplayContext].filter(Boolean).join('\n\n');
 
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -625,7 +721,8 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
 
 请始终根据上述设定，在故事行文中以该身份称呼、指引并对待【用户】。`;
 
-      const finalSystemInstruction = `${activeCharacter.systemInstruction}\n\n${userRoleplayContext}`;
+      const scenarioInstruction = buildScenarioInstruction(activeScenario);
+      const finalSystemInstruction = [activeCharacter.systemInstruction, scenarioInstruction, userRoleplayContext].filter(Boolean).join('\n\n');
 
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -710,6 +807,7 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
     e.stopPropagation(); // Avoid selecting the deleted item
     const updated = customCharacters.filter(c => c.id !== id);
     saveCustomCharacters(updated);
+    saveScenarios(scenarios.map(scenario => scenario.characterId === id ? {...scenario, characterId: undefined} : scenario));
 
     // Delete associated threads
     const updatedThreads = threads.filter(t => t.characterId !== id);
@@ -906,7 +1004,10 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
               {/* New Chat button with Assistant selector dropdown */}
               <div className="p-3 relative">
                 <button
-                  onClick={() => setNewChatDropdownOpen(!newChatDropdownOpen)}
+                  onClick={() => {
+                    setNewChatDropdownOpen(!newChatDropdownOpen);
+                    if (!newChatCharacterId && allCharacters[0]) setNewChatCharacterId(allCharacters[0].id);
+                  }}
                   className="w-full flex items-center justify-between border border-cyan-500/25 rounded-lg px-3.5 py-2.5 text-xs font-semibold text-zinc-200 bg-zinc-900 hover:bg-zinc-850 transition-all cursor-pointer shadow-sm group"
                   id="sidebar-new-chat-btn"
                 >
@@ -930,44 +1031,19 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
                     />
                     <div className="absolute top-full left-3 right-3 mt-1.5 bg-[#1d1d1d] border border-zinc-800 rounded-lg shadow-2xl z-50 flex flex-col max-h-[280px] overflow-hidden font-sans">
                       <div className="p-2 border-b border-zinc-800 bg-zinc-900/40 flex-shrink-0">
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block px-1">选择 AI 角色发起对话</span>
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block px-1">选择角色与对话场景</span>
                       </div>
-                      <div className="overflow-y-auto p-1.5 space-y-0.5 flex-1">
+                      <div className="overflow-y-auto p-3 space-y-3 flex-1">
                         {allCharacters.length === 0 ? (
                           <div className="text-center py-4 px-2 text-[10px] text-zinc-500">
                             暂无角色，请前往「角色管理」页面创建。
                           </div>
                         ) : (
-                          allCharacters.map((char) => (
-                            <button
-                              key={char.id}
-                              onClick={() => {
-                                const newThread: ChatThread = {
-                                  id: `thread-${char.id}-${Date.now()}`,
-                                  characterId: char.id,
-                                  title: `与 ${char.name} 的新对话`,
-                                  messages: [],
-                                  timestamp: Date.now()
-                                };
-                                const updatedThreads = [newThread, ...threads];
-                                saveThreads(updatedThreads);
-                                setSelectedThreadId(newThread.id);
-                                setNewChatDropdownOpen(false);
-                                if (window.innerWidth < 768) {
-                                  setSidebarOpen(false);
-                                }
-                              }}
-                              className="w-full flex items-center space-x-2.5 px-2.5 py-2 rounded-md text-xs text-left text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 transition-colors cursor-pointer"
-                            >
-                              <div className="w-5 h-5 rounded-full bg-zinc-850 border border-zinc-800 flex items-center justify-center flex-shrink-0 text-[9px] text-zinc-400">
-                                <LucideIcon name={char.avatar} size={10} />
-                              </div>
-                              <div className="truncate flex-1">
-                                <span className="block font-medium text-zinc-200 text-xs truncate leading-none">{char.name}</span>
-                                <span className="text-[9px] text-zinc-500 truncate block mt-0.5">{char.tagline}</span>
-                              </div>
-                            </button>
-                          ))
+                          <>
+                            <label className="block space-y-1.5"><span className="text-[10px] font-semibold text-zinc-500">角色</span><select value={newChatCharacterId} onChange={event => { setNewChatCharacterId(event.target.value); setNewChatScenarioId(''); }} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-2 text-xs text-zinc-200 outline-none focus:border-cyan-500/50">{allCharacters.map(character => <option key={character.id} value={character.id}>{character.name}</option>)}</select></label>
+                            <label className="block space-y-1.5"><span className="text-[10px] font-semibold text-zinc-500">场景</span><select value={newChatScenarioId} onChange={event => setNewChatScenarioId(event.target.value)} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-2 text-xs text-zinc-200 outline-none focus:border-cyan-500/50"><option value="">使用角色默认环境</option>{availableNewChatScenarios.map(scenario => <option key={scenario.id} value={scenario.id}>{scenario.name}{scenario.characterId ? ' · 专属' : ' · 通用'}</option>)}</select></label>
+                            <button onClick={() => createNewThread(newChatCharacterId, newChatScenarioId || undefined)} className="w-full rounded-lg bg-cyan-500 px-3 py-2 text-xs font-bold text-zinc-950 hover:bg-cyan-400">创建对话</button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -1173,6 +1249,7 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
             <div className="flex-1 h-full min-h-0 w-full">
               <ChatWorkspace
                 character={activeCharacter}
+                scenario={activeScenario}
                 messages={activeMessages}
                 onSendMessage={handleSendMessage}
                 onClearHistory={handleClearHistory}
@@ -1215,6 +1292,10 @@ ${userProfile.appearance ? `外貌外表：${userProfile.appearance}` : ''}
       {activeTab === 'scenarios' && (
         <ScenariosDashboard
           characters={allCharacters}
+          scenarios={scenarios}
+          onSaveScenario={handleSaveScenario}
+          onDeleteScenario={handleDeleteScenario}
+          onStartConversation={handleStartScenarioConversation}
           middlePanelWidth={middlePanelWidth}
           onMiddlePanelResizeStart={handleMiddlePanelResizeStart}
         />
