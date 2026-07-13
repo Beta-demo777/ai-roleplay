@@ -62,14 +62,14 @@ export default function ExtensionsDashboard({settings, onChange, middlePanelWidt
         <div className="p-2">
           <div className="flex items-center gap-3 rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-3">
             <Volume2 size={15} className="text-cyan-400" />
-            <div><p className="text-xs font-semibold">回复语音播放</p><p className="mt-0.5 text-[10px] text-zinc-500">浏览器原生语音合成</p></div>
+            <div><p className="text-xs font-semibold">TTS</p><p className="mt-0.5 text-[10px] text-zinc-500">浏览器原生语音合成</p></div>
           </div>
         </div>
       </aside>
       <MiddlePanelResizeHandle onPointerDown={onMiddlePanelResizeStart} />
 
       <main className="flex min-w-0 flex-1 flex-col bg-[#1f1f1f]">
-        <header className="flex h-12 items-center border-b border-[#303030] px-6 text-sm font-semibold">回复语音播放</header>
+        <header className="flex h-12 items-center border-b border-[#303030] px-6 text-sm font-semibold">TTS</header>
         <div className="max-w-3xl space-y-5 overflow-y-auto p-6">
           <section className="rounded-2xl border border-zinc-800 bg-zinc-950/30 p-5">
             <SettingRow title="启用语音播放" description="为每条 AI 回复显示播放按钮，并允许浏览器朗读回复内容。">
