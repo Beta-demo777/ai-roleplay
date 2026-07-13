@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Gauge, Play, Puzzle, Square, Volume2} from 'lucide-react';
+import {Gauge, Play, Square, Volume2} from 'lucide-react';
 import {CharacterVoiceSettings, FeatureSettings, resolveCharacterVoiceSettings} from '../featureSettings';
 import {Character} from '../types';
 import MiddlePanelResizeHandle from './MiddlePanelResizeHandle';
@@ -55,10 +55,6 @@ export default function ExtensionsDashboard({settings, onChange, middlePanelWidt
   return (
     <div className="flex h-full flex-1 overflow-hidden bg-[#1e1e1e] text-zinc-100" id="extensions-dashboard-root">
       <aside className="flex h-full flex-shrink-0 flex-col border-r border-[#303030] bg-[#171717]" style={{width: middlePanelWidth}}>
-        <div className="border-b border-[#303030] p-4">
-          <div className="flex items-center gap-2 text-sm font-semibold"><Puzzle size={15} className="text-cyan-400" />功能拓展</div>
-          <p className="mt-1.5 text-[10px] leading-4 text-zinc-500">管理可选的浏览器增强能力</p>
-        </div>
         <div className="p-2">
           <div className="flex items-center gap-3 rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-3">
             <Volume2 size={15} className="text-cyan-400" />
