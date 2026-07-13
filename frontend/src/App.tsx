@@ -9,6 +9,7 @@ import ScenariosDashboard from './components/ScenariosDashboard';
 import ExtensionsDashboard from './components/ExtensionsDashboard';
 import PersonasDashboard from './components/PersonasDashboard';
 import MiddlePanelResizeHandle from './components/MiddlePanelResizeHandle';
+import SearchInput from './components/SearchInput';
 import { getActiveModelServiceConfig } from './modelService';
 import { loadRemoteAppState, PersistedAppState, saveRemoteAppState, saveRemoteAppStateOnPageExit } from './stateApi';
 import {FeatureSettings, loadFeatureSettings, saveFeatureSettings} from './featureSettings';
@@ -1124,28 +1125,8 @@ ${conversationProfile.appearance ? `外貌外表：${conversationProfile.appeara
               </div>
 
               {/* Search bar inside sidebar */}
-              <div className="px-3 pb-2 border-b border-[#303030]/20">
-                <div className="relative w-full">
-                  <div className="absolute inset-y-0 left-2.5 flex items-center pointer-events-none text-zinc-500">
-                    <LucideIcon name="Search" size={11} />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="搜索对话、姓名或消息内容..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-8 pr-7 py-1.5 text-xs bg-[#111] border border-zinc-800/80 rounded-md focus:outline-none focus:border-zinc-700 text-zinc-200 transition-all placeholder-zinc-600"
-                    id="sidebar-search-input"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="absolute inset-y-0 right-2.5 flex items-center text-zinc-500 hover:text-zinc-300"
-                    >
-                      <LucideIcon name="X" size={10} />
-                    </button>
-                  )}
-                </div>
+              <div className="border-b border-[#303030]/20 p-3 pt-0">
+                <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="搜索对话、姓名或消息内容..." id="sidebar-search-input" />
               </div>
 
               {/* Conversation list scrollable panel */}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Character } from '../types';
 import LucideIcon from './LucideIcon';
 import MiddlePanelResizeHandle from './MiddlePanelResizeHandle';
+import SearchInput from './SearchInput';
 
 interface AssistantsDashboardProps {
   characters: Character[];
@@ -156,28 +157,8 @@ export default function AssistantsDashboard({
         </div>
 
         {/* Search */}
-        <div className="px-3 py-2.5">
-          <div className="relative w-full">
-            <div className="absolute inset-y-0 left-2.5 flex items-center pointer-events-none text-zinc-500">
-              <LucideIcon name="Search" size={11} />
-            </div>
-            <input
-              type="text"
-              placeholder="搜索角色名字或设定..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-7 py-1.5 text-xs bg-zinc-900 border border-zinc-800/80 rounded-lg focus:outline-hidden focus:border-zinc-700 text-zinc-200 transition-all placeholder-zinc-600"
-              id="sidebar-assistants-search"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-2.5 flex items-center text-zinc-500 hover:text-zinc-300"
-              >
-                <LucideIcon name="X" size={10} />
-              </button>
-            )}
-          </div>
+        <div className="p-3">
+          <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="搜索角色名字或设定..." id="sidebar-assistants-search" />
         </div>
 
         {/* Category Pills inside Middle Sidebar */}
@@ -258,7 +239,7 @@ export default function AssistantsDashboard({
       <main className="flex-1 flex flex-col h-full overflow-hidden bg-[#212121]" id="assistants-right-workspace">
 
         {/* Workspace Card Header */}
-        <div className="h-14 border-b border-[#303030] flex items-center justify-between px-6 bg-[#1a1a1a] z-10">
+        <div className="h-12 flex-shrink-0 border-b border-[#303030] flex items-center justify-between px-5 bg-zinc-900/60 z-10">
           <div className="flex items-center space-x-3 overflow-hidden">
             <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
               <LucideIcon name={isCreatingNew ? 'PlusCircle' : 'Settings'} size={15} />

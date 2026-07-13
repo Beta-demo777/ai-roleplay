@@ -1,7 +1,8 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {BookOpenText, MapPinned, MessageSquare, Plus, Save, Search, Trash2} from 'lucide-react';
+import {BookOpenText, MapPinned, MessageSquare, Plus, Save, Trash2} from 'lucide-react';
 import {Character, DialogueScenario} from '../types';
 import MiddlePanelResizeHandle from './MiddlePanelResizeHandle';
+import SearchInput from './SearchInput';
 
 interface ScenariosDashboardProps {
   characters: Character[];
@@ -82,9 +83,7 @@ export default function ScenariosDashboard({characters, scenarios, onSaveScenari
             <Plus size={14} /><span>创建对话场景</span>
           </button>
         </div>
-        <div className="p-3">
-          <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" size={13} /><input value={searchQuery} onChange={event => setSearchQuery(event.target.value)} placeholder="搜索场景、地点或背景..." className="w-full rounded-lg border border-zinc-800 bg-zinc-950 py-2 pl-8 pr-3 text-xs outline-none focus:border-cyan-500/40" /></div>
-        </div>
+        <div className="p-3"><SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="搜索场景、地点或背景..." /></div>
         <div className="flex-1 space-y-1 overflow-y-auto px-2 pb-3">
           {filtered.map(item => (
             <button key={item.id} onClick={() => setSelectedId(item.id)} className={`w-full rounded-xl border px-3 py-3 text-left transition ${selectedId === item.id ? 'border-cyan-500/20 bg-cyan-500/10' : 'border-transparent hover:bg-zinc-900'}`}>

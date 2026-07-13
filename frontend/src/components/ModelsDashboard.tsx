@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import MiddlePanelResizeHandle from './MiddlePanelResizeHandle';
+import SearchInput from './SearchInput';
 import {
   getActiveModelProviderId,
   ModelServiceProvider,
@@ -412,23 +413,14 @@ export default function ModelsDashboard({
 
       {/* COLUMN 2: MIDDLE COLUMN (Search & 18+ Platforms List) */}
       <aside
-        className="bg-[#1a1a1a] border-r border-[#262626] flex flex-col h-full flex-shrink-0 select-none overflow-hidden"
+        className="bg-[#171717] border-r border-[#303030] flex flex-col h-full flex-shrink-0 select-none overflow-hidden"
         style={{ width: middlePanelWidth }}
         id="models-middle-sidebar"
       >
         {/* Search Platform */}
-        <div className="p-3 border-b border-[#262626] flex items-center space-x-2 bg-zinc-900/40">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500 w-3 h-3" />
-            <input
-              type="text"
-              placeholder="搜索模型平台..."
-              value={searchProviderQuery}
-              onChange={(e) => setSearchProviderQuery(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-md py-1.5 pl-7 pr-2 text-xs focus:outline-none focus:border-cyan-500/50 text-zinc-200 placeholder-zinc-600"
-            />
-          </div>
-          <button className="p-1.5 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-zinc-200">
+        <div className="p-3 border-b border-[#303030]/20 flex items-center space-x-2">
+          <SearchInput className="flex-1" value={searchProviderQuery} onChange={setSearchProviderQuery} placeholder="搜索模型平台..." />
+          <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-950/80 text-zinc-500 transition hover:border-zinc-700 hover:text-zinc-200">
             <Filter className="w-3 h-3" />
           </button>
         </div>

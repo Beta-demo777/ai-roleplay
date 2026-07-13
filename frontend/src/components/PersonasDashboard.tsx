@@ -1,8 +1,9 @@
 import React, {useEffect, useState} from 'react';
-import {CheckCircle2, Plus, Save, Search, Trash2, UserRound} from 'lucide-react';
+import {CheckCircle2, Plus, Save, Trash2, UserRound} from 'lucide-react';
 import {UserProfile} from '../types';
 import LucideIcon from './LucideIcon';
 import MiddlePanelResizeHandle from './MiddlePanelResizeHandle';
+import SearchInput from './SearchInput';
 
 const AVATARS = ['User', 'Code', 'Cpu', 'Bot', 'Compass', 'Crown', 'Lightbulb'];
 
@@ -49,7 +50,7 @@ export default function PersonasDashboard({personas, activePersonaId, onSave, on
   return <div className="flex h-full flex-1 overflow-hidden bg-[#1e1e1e] text-zinc-100">
     <aside className="flex h-full flex-shrink-0 flex-col border-r border-[#303030] bg-[#171717]" style={{width: middlePanelWidth}}>
       <div className="border-b border-[#303030]/40 p-4"><button onClick={() => {setIsNew(true); setSelectedId(''); setDraft(emptyPersona());}} className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-cyan-500/30 bg-cyan-500/5 px-3 py-2 text-xs font-semibold text-cyan-400 hover:bg-cyan-500/10"><Plus size={14} />创建新的人设</button></div>
-      <div className="p-3"><div className="relative"><Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" /><input value={search} onChange={event => setSearch(event.target.value)} placeholder="搜索人设..." className="w-full rounded-lg border border-zinc-800 bg-zinc-950 py-2 pl-8 pr-3 text-xs outline-none focus:border-cyan-500/40" /></div></div>
+      <div className="p-3"><SearchInput value={search} onChange={setSearch} placeholder="搜索人设..." /></div>
       <div className="flex-1 space-y-1 overflow-y-auto px-2 pb-3">{filtered.map(persona => <button key={persona.id} onClick={() => {setSelectedId(persona.id || ''); setIsNew(false);}} className={`flex w-full items-center gap-2.5 rounded-xl border px-3 py-3 text-left ${!isNew && selectedId === persona.id ? 'border-cyan-500/20 bg-cyan-500/10' : 'border-transparent hover:bg-zinc-900'}`}><div className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-700 bg-zinc-800"><LucideIcon name={persona.avatar} size={12} /></div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">{persona.name}</p><p className="mt-0.5 truncate text-[9px] text-zinc-500">{persona.description || '尚未填写背景'}</p></div>{persona.id === activePersonaId && <CheckCircle2 size={13} className="text-emerald-400" />}</button>)}</div>
     </aside>
     <MiddlePanelResizeHandle onPointerDown={onMiddlePanelResizeStart} />
