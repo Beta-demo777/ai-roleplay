@@ -53,10 +53,10 @@ export default function ExtensionsDashboard({settings, onChange, middlePanelWidt
   }, [characters, selectedCharacterId]);
 
   return (
-    <div className="flex h-full flex-1 overflow-hidden bg-[#1e1e1e] text-zinc-100" id="extensions-dashboard-root">
-      <aside className="flex h-full flex-shrink-0 flex-col border-r border-[#303030] bg-[#171717]" style={{width: middlePanelWidth}}>
+    <div className="management-root" id="extensions-dashboard-root">
+      <aside className="management-sidebar" style={{width: middlePanelWidth}}>
         <div className="p-2">
-          <div className="flex items-center gap-3 rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-3">
+          <div className="management-list-item management-list-item--active flex items-center gap-3">
             <Volume2 size={15} className="text-cyan-400" />
             <div><p className="text-xs font-semibold">TTS</p><p className="mt-0.5 text-[10px] text-zinc-500">浏览器原生语音合成</p></div>
           </div>
@@ -64,9 +64,9 @@ export default function ExtensionsDashboard({settings, onChange, middlePanelWidt
       </aside>
       <MiddlePanelResizeHandle onPointerDown={onMiddlePanelResizeStart} />
 
-      <main className="flex min-w-0 flex-1 flex-col bg-[#1f1f1f]">
-        <header className="flex h-12 items-center border-b border-[#303030] px-6 text-sm font-semibold">TTS</header>
-        <div className="max-w-3xl space-y-5 overflow-y-auto p-6">
+      <main className="management-workspace">
+        <header className="management-header text-sm font-semibold">TTS</header>
+        <div className="management-content max-w-3xl space-y-5">
           <section className="rounded-2xl border border-zinc-800 bg-zinc-950/30 p-5">
             <SettingRow title="启用语音播放" description="为每条 AI 回复显示播放按钮，并允许浏览器朗读回复内容。">
               <Toggle checked={settings.voicePlaybackEnabled} disabled={!supported} onChange={value => update('voicePlaybackEnabled', value)} />
@@ -97,7 +97,7 @@ export default function ExtensionsDashboard({settings, onChange, middlePanelWidt
                 {voices.map(voice => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} · {voice.lang}</option>)}
               </select>
             </label>
-            <button type="button" disabled={!settings.voicePlaybackEnabled} onClick={() => preview.currentId ? preview.stop() : preview.play('preview', '欢迎来到 Aura，这是当前语音效果的试听内容。')} className="flex items-center gap-2 rounded-lg border border-cyan-500/20 px-4 py-2 text-xs text-cyan-400 hover:bg-cyan-500/10 disabled:cursor-not-allowed disabled:opacity-40">
+            <button type="button" disabled={!settings.voicePlaybackEnabled} onClick={() => preview.currentId ? preview.stop() : preview.play('preview', '欢迎来到 Aura，这是当前语音效果的试听内容。')} className="ui-button-secondary border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/10">
               {preview.currentId ? <Square size={12} /> : <Play size={12} />}{preview.currentId ? '停止试听' : '试听当前声音'}
             </button>
           </section>
@@ -127,7 +127,7 @@ export default function ExtensionsDashboard({settings, onChange, middlePanelWidt
                   <Slider label="角色音调" value={characterVoice?.speechPitch ?? settings.speechPitch} min={0.5} max={1.5} step={0.1} disabled={!customEnabled} onChange={value => updateCharacterVoice('speechPitch', value)} />
                   <Slider label="角色音量" value={characterVoice?.speechVolume ?? settings.speechVolume} min={0} max={1} step={0.1} disabled={!customEnabled} onChange={value => updateCharacterVoice('speechVolume', value)} />
                   <label className="block space-y-2 text-xs text-zinc-400"><span>角色声音</span><select value={characterVoice?.voiceURI ?? settings.voiceURI} disabled={!customEnabled} onChange={event => updateCharacterVoice('voiceURI', event.target.value)} className="field-input"><option value="">系统默认声音</option>{(characterVoice?.voiceURI ?? settings.voiceURI) && !voices.some(voice => voice.voiceURI === (characterVoice?.voiceURI ?? settings.voiceURI) || voice.name === (characterVoice?.voiceURI ?? settings.voiceURI)) && <option value={characterVoice?.voiceURI ?? settings.voiceURI}>{characterVoice?.voiceURI ?? settings.voiceURI} · 当前浏览器不可用</option>}{voices.map(voice => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} · {voice.lang}</option>)}</select></label>
-                  <button type="button" disabled={!customEnabled} onClick={() => preview.currentId ? preview.stop() : preview.play('character-preview', `你好，我是${selectedCharacter.name}。这是我的专属声音试听。`)} className="flex items-center gap-2 rounded-lg border border-cyan-500/20 px-4 py-2 text-xs text-cyan-400 hover:bg-cyan-500/10 disabled:cursor-not-allowed disabled:opacity-40">{preview.currentId ? <Square size={12} /> : <Play size={12} />}{preview.currentId ? '停止角色试听' : '试听角色声音'}</button>
+                  <button type="button" disabled={!customEnabled} onClick={() => preview.currentId ? preview.stop() : preview.play('character-preview', `你好，我是${selectedCharacter.name}。这是我的专属声音试听。`)} className="ui-button-secondary border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/10">{preview.currentId ? <Square size={12} /> : <Play size={12} />}{preview.currentId ? '停止角色试听' : '试听角色声音'}</button>
                 </div>
               </>
             )}

@@ -136,11 +136,11 @@ export default function AssistantsDashboard({
   };
 
   return (
-    <div className="flex-1 flex h-full text-zinc-100 overflow-hidden relative w-full bg-[#1e1e1e]" id="assistants-dashboard-root">
+    <div className="management-root relative w-full" id="assistants-dashboard-root">
 
       {/* COLUMN 2: MIDDLE COLUMN (Assistants List Sidebar) */}
       <aside
-        className="bg-[#171717] border-r border-[#303030] flex flex-col h-full flex-shrink-0 select-none overflow-hidden"
+        className="management-sidebar select-none"
         style={{ width: middlePanelWidth }}
         id="assistants-middle-sidebar"
       >
@@ -148,7 +148,7 @@ export default function AssistantsDashboard({
         <div className="p-4 border-b border-[#303030]/40">
           <button
             onClick={() => setIsCreatingNew(true)}
-            className="w-full flex items-center justify-center space-x-1.5 py-2 px-3 border border-dashed border-cyan-500/30 rounded-xl text-xs font-semibold text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500/10 hover:border-cyan-500/50 transition-all cursor-pointer shadow-xs group"
+            className="management-create-button group"
             id="sidebar-create-new-char-btn"
           >
             <LucideIcon name="Plus" size={13} className="group-hover:scale-110 transition-transform" />
@@ -199,10 +199,10 @@ export default function AssistantsDashboard({
                     setSelectedId(char.id);
                     setIsCreatingNew(false);
                   }}
-                  className={`group w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs cursor-pointer transition-all duration-150 relative ${
+                  className={`management-list-item group flex items-center justify-between text-xs cursor-pointer relative ${
                     isSelected
-                      ? 'bg-[#2f2f2f] text-zinc-100 font-medium border-l-2 border-cyan-500/80 pl-2.5'
-                      : 'text-zinc-400 hover:bg-[#212121]/60 hover:text-zinc-200'
+                      ? 'management-list-item--active font-medium'
+                      : ''
                   }`}
                   id={`dash-list-item-${char.id}`}
                 >
@@ -236,10 +236,10 @@ export default function AssistantsDashboard({
       <MiddlePanelResizeHandle onPointerDown={onMiddlePanelResizeStart} />
 
       {/* COLUMN 3: RIGHT COLUMN (Assistant Settings Panel) */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden bg-[#212121]" id="assistants-right-workspace">
+      <main className="management-workspace" id="assistants-right-workspace">
 
         {/* Workspace Card Header */}
-        <div className="h-12 flex-shrink-0 border-b border-[#303030] flex items-center justify-between px-5 bg-zinc-900/60 z-10">
+        <div className="management-header z-10">
           <div className="flex items-center space-x-3 overflow-hidden">
             <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
               <LucideIcon name={isCreatingNew ? 'PlusCircle' : 'Settings'} size={15} />
@@ -267,7 +267,7 @@ export default function AssistantsDashboard({
           {!isCreatingNew && currentSelectedCharacter && (
             <button
               onClick={() => onSelectCharacter(currentSelectedCharacter.id)}
-              className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-zinc-950 rounded-xl text-xs font-bold transition-all shadow-md shadow-cyan-500/5 cursor-pointer flex-shrink-0"
+              className="ui-button-primary flex-shrink-0"
               id="dash-quick-dialog-btn"
             >
               <LucideIcon name="MessageSquare" size={12} className="text-zinc-950 font-bold" />
@@ -277,7 +277,7 @@ export default function AssistantsDashboard({
         </div>
 
         {/* Scrollable Form Body */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 relative" id="assistant-form-scroll-container">
+        <div className="management-content space-y-6 relative" id="assistant-form-scroll-container">
           {/* Subtle decoration elements */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-cyan-500/5 to-transparent rounded-full blur-[100px] pointer-events-none" />
 
@@ -295,7 +295,7 @@ export default function AssistantsDashboard({
                   placeholder="例如：赛博刺客 · 零"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3.5 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-hidden focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/10 text-zinc-100 transition-all placeholder-zinc-600"
+                  className="field-input"
                   id="dash-char-name"
                 />
               </div>
@@ -311,7 +311,7 @@ export default function AssistantsDashboard({
                   placeholder="例如：我的刀，可比你的话快得多。"
                   value={tagline}
                   onChange={(e) => setTagline(e.target.value)}
-                  className="w-full px-3.5 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-hidden focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/10 text-zinc-100 transition-all placeholder-zinc-600"
+                  className="field-input"
                   id="dash-char-tagline"
                 />
               </div>
@@ -321,7 +321,7 @@ export default function AssistantsDashboard({
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-zinc-400 flex items-center space-x-1">
-                  <span>核心身世设定与身世设定 (Personality)</span>
+                  <span>核心性格与身世设定 (Personality)</span>
                   <span className="text-rose-500">*</span>
                 </label>
                 <span className="text-[10px] text-zinc-500">性格特征、背景故事、说话口头禅等</span>
@@ -332,7 +332,7 @@ export default function AssistantsDashboard({
                 placeholder="例如：冷酷孤傲的机械忍者。在霓虹不夜城长大。平时说话简洁高冷，常说“多说无益”。由于义体化严重，行动悄无声息。内心对真相充满渴望。"
                 value={personality}
                 onChange={(e) => setPersonality(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-sm bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-hidden focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/10 text-zinc-100 transition-all font-sans resize-none placeholder-zinc-600"
+                className="field-input resize-none font-sans"
                 id="dash-char-personality"
               />
             </div>
@@ -348,7 +348,7 @@ export default function AssistantsDashboard({
                 placeholder="例如：通常在旧城区酒馆吧台后工作；具体环境优先使用场景管理中的设定。"
                 value={scenario}
                 onChange={(e) => setScenario(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-sm bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-hidden focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/10 text-zinc-100 transition-all font-sans resize-none placeholder-zinc-600"
+                className="field-input resize-none font-sans"
                 id="dash-char-scenario"
               />
             </div>
@@ -368,7 +368,7 @@ export default function AssistantsDashboard({
                 placeholder="例如：*在落满雨滴的卡座里，零正在细细擦拭他发光的等离子刀。微弱的霓虹灯映照出他半边由合金构成的冷漠脸庞。他并未看你，只是一声冷哼，刀锋收入刀鞘，发出悦耳的声音。* &#10;&#10;“又是来打听芯片下落的？在不夜城，知道太多可不是什么好事，朋友。”"
                 value={firstMessage}
                 onChange={(e) => setFirstMessage(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-sm bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-hidden focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/10 text-zinc-100 transition-all font-sans resize-none placeholder-zinc-600"
+                className="field-input resize-none font-sans"
                 id="dash-char-firstmessage"
               />
             </div>
@@ -395,7 +395,7 @@ export default function AssistantsDashboard({
                 placeholder="点击上方‘智能一键生成模板’，或者自主修改：&#10;你现在要完全扮演【零】。这是一个文字角色扮演会话，请用星号*包裹动作描述..."
                 value={systemInstruction}
                 onChange={(e) => setSystemInstruction(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-hidden focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/10 text-zinc-100 transition-all font-mono resize-none placeholder-zinc-600 leading-relaxed"
+                className="field-input resize-none font-mono text-xs leading-relaxed"
                 id="dash-char-instruction"
               />
             </div>
@@ -426,7 +426,7 @@ export default function AssistantsDashboard({
                         }
                       }
                     }}
-                    className="flex items-center space-x-1 px-3.5 py-2 text-xs font-semibold text-rose-400 border border-rose-500/20 hover:border-rose-500/40 bg-rose-500/5 hover:bg-rose-500/10 rounded-xl transition-all cursor-pointer"
+                    className="ui-button-danger"
                     id="dash-char-delete-btn"
                   >
                     <LucideIcon name="Trash" size={12} />
@@ -440,14 +440,14 @@ export default function AssistantsDashboard({
                   <button
                     type="button"
                     onClick={() => setIsCreatingNew(false)}
-                    className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-zinc-200 rounded-xl hover:bg-zinc-800 transition-colors cursor-pointer"
+                    className="ui-button-secondary border-transparent bg-transparent"
                   >
                     取消
                   </button>
                 )}
                 <button
                   type="submit"
-                  className="px-5 py-2 text-xs font-semibold text-zinc-950 bg-cyan-500 hover:bg-cyan-400 rounded-xl transition-all shadow-lg shadow-cyan-500/10 cursor-pointer"
+                  className="ui-button-primary px-5"
                   id="dash-char-save-btn"
                 >
                   {isCreatingNew ? '保存并放入大厅' : '确认更新人设设定'}
