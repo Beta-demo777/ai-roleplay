@@ -639,7 +639,7 @@ export default function ChatWorkspace({
       </div>
 
       {/* Input panel bar */}
-      <footer className="workspace-surface relative px-4 pb-6 pt-2 flex-shrink-0 border-t border-[#303030]/20 z-20">
+      <footer className="chat-composer-footer workspace-surface relative px-4 pb-6 pt-2 flex-shrink-0 border-t border-[#303030]/20 z-20">
         <div className="max-w-2xl mx-auto w-full relative">
 
           {/* Main rounded container like ChatGPT's input bar */}

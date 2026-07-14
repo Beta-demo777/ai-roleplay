@@ -992,21 +992,21 @@ ${conversationProfile.appearance ? `外貌外表：${conversationProfile.appeara
 
   return (
     <div
-      className="workspace-surface h-screen flex text-zinc-100 font-sans relative overflow-hidden"
+      className="app-shell workspace-surface h-screen flex text-zinc-100 font-sans relative overflow-hidden"
       id="app-root-container"
     >
       {/* 1. EXTREME LEFT VERTICAL NAVIGATION BAR */}
       <nav
-        className="w-14 md:w-16 bg-[#0a0a0a] border-r border-[#303030]/80 flex flex-col items-center py-5 space-y-6 flex-shrink-0 z-40 h-full select-none"
+        className="main-navigation w-14 md:w-16 bg-[#0a0a0a] border-r border-[#303030]/80 flex flex-col items-center py-5 space-y-6 flex-shrink-0 z-40 h-full select-none"
         id="main-app-nav-sidebar"
       >
         {/* Brand logo mini-bubble */}
-        <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mb-2 flex-shrink-0">
+        <div className="main-navigation-brand w-9 h-9 md:w-10 md:h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mb-2 flex-shrink-0">
           <LucideIcon name="Bot" size={15} />
         </div>
 
         {/* Navigation items */}
-        <div className="flex-1 flex flex-col items-center space-y-4 w-full">
+        <div className="main-navigation-items flex-1 flex flex-col items-center space-y-4 w-full">
           {([
             { id: 'chat', label: '对话', icon: 'MessageSquare' },
             { id: 'assistants', label: '角色管理', icon: 'Bot' },
@@ -1020,7 +1020,7 @@ ${conversationProfile.appearance ? `外貌外表：${conversationProfile.appeara
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex flex-col items-center justify-center transition-all duration-200 relative group cursor-pointer ${
+                className={`main-navigation-item w-10 h-10 md:w-12 md:h-12 rounded-xl flex flex-col items-center justify-center transition-all duration-200 relative group cursor-pointer ${
                   isActive
                     ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/25'
                     : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900/60'
@@ -1033,7 +1033,7 @@ ${conversationProfile.appearance ? `外貌外表：${conversationProfile.appeara
 
                 {/* Discord-style left indicator pill */}
                 {isActive && (
-                  <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-cyan-500 rounded-r-full" />
+                  <div className="main-navigation-indicator absolute left-0 top-1/4 bottom-1/4 w-1 bg-cyan-500 rounded-r-full" />
                 )}
               </button>
             );
@@ -1043,7 +1043,7 @@ ${conversationProfile.appearance ? `外貌外表：${conversationProfile.appeara
         {/* User Profile quick trigger at bottom */}
         <button
           onClick={() => setActiveTab('personas')}
-          className="w-10 h-10 rounded-xl flex items-center justify-center text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900/60 transition-all cursor-pointer flex-shrink-0"
+          className="main-navigation-profile w-10 h-10 rounded-xl flex items-center justify-center text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900/60 transition-all cursor-pointer flex-shrink-0"
           title="管理我的人设"
           id="nav-profile-trigger-btn"
         >
@@ -1065,13 +1065,13 @@ ${conversationProfile.appearance ? `外貌外表：${conversationProfile.appeara
 
           {/* LEFT SIDEBAR (Styled exactly like ChatGPT's sidebar) */}
           <aside
-            className={`fixed md:static inset-y-0 left-14 md:left-0 z-30 bg-[#171717] flex-shrink-0 flex flex-col h-full border-r border-[#303030] transition-transform duration-300 transform overflow-hidden ${
+            className={`chat-sidebar fixed md:static inset-y-0 left-14 md:left-0 z-30 bg-[#171717] flex-shrink-0 flex flex-col h-full border-r border-[#303030] transition-transform duration-300 transform overflow-hidden ${
               sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:w-0 md:border-r-0'
             }`}
-            style={sidebarOpen ? { width: middlePanelWidth, maxWidth: 'calc(100vw - 3.5rem)' } : undefined}
+            style={sidebarOpen ? { width: middlePanelWidth, maxWidth: '100vw' } : undefined}
             id="chatgpt-left-sidebar"
           >
-            <div className="flex flex-col h-full flex-shrink-0 select-none" style={{ width: middlePanelWidth, maxWidth: 'calc(100vw - 3.5rem)' }}>
+            <div className="flex flex-col h-full flex-shrink-0 select-none" style={{ width: middlePanelWidth, maxWidth: '100vw' }}>
               {/* New Chat button with Assistant selector dropdown */}
               <div className="p-3 relative">
                 <button

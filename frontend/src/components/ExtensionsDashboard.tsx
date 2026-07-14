@@ -54,7 +54,7 @@ export default function ExtensionsDashboard({settings, onChange, middlePanelWidt
 
   return (
     <div className="management-root" id="extensions-dashboard-root">
-      <aside className="management-sidebar" style={{width: middlePanelWidth}}>
+      <aside className="management-sidebar management-sidebar--compact-mobile" style={{width: middlePanelWidth}}>
         <div className="p-2">
           <div className="management-list-item management-list-item--active flex items-center gap-3">
             <Volume2 size={15} className="text-cyan-400" />
@@ -143,7 +143,7 @@ export default function ExtensionsDashboard({settings, onChange, middlePanelWidt
 }
 
 function SettingRow({title, description, children}: {title: string; description: string; children: React.ReactNode}) {
-  return <div className="flex items-center justify-between gap-6"><div><p className="text-sm font-semibold">{title}</p><p className="mt-1 text-xs leading-5 text-zinc-500">{description}</p></div>{children}</div>;
+  return <div className="setting-row flex items-center justify-between gap-6"><div className="min-w-0"><p className="text-sm font-semibold">{title}</p><p className="mt-1 text-xs leading-5 text-zinc-500">{description}</p></div>{children}</div>;
 }
 
 function Toggle({checked, disabled, onChange}: {checked: boolean; disabled?: boolean; onChange: (value: boolean) => void}) {

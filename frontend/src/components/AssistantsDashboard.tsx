@@ -240,13 +240,13 @@ export default function AssistantsDashboard({
 
         {/* Workspace Card Header */}
         <div className="management-header z-10">
-          <div className="flex items-center space-x-3 overflow-hidden">
+          <div className="flex min-w-0 items-center space-x-3 overflow-hidden">
             <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
               <LucideIcon name={isCreatingNew ? 'PlusCircle' : 'Settings'} size={15} />
             </div>
             <div className="overflow-hidden">
-              <h1 className="text-sm font-bold text-zinc-200 tracking-tight flex items-center space-x-2">
-                <span>{isCreatingNew ? '定制全新的 AI 扮演角色' : `修改 AI 角色「${name}」设定`}</span>
+              <h1 className="flex min-w-0 items-center space-x-2 text-sm font-bold tracking-tight text-zinc-200">
+                <span className="truncate">{isCreatingNew ? '定制全新的 AI 扮演角色' : `修改 AI 角色「${name}」设定`}</span>
                 {!isCreatingNew && (
                   <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono uppercase tracking-wider ${
                     currentSelectedCharacter?.isCustom
@@ -257,7 +257,7 @@ export default function AssistantsDashboard({
                   </span>
                 )}
               </h1>
-              <p className="text-[10px] text-zinc-500 truncate mt-0.5">
+              <p className="header-supporting-text text-[10px] text-zinc-500 truncate mt-0.5">
                 {isCreatingNew ? '在此自定义配置您的专属角色设想，创造独立交互灵体' : '精细微调此角色的性格、环境开场白、以及扮演系统提示词'}
               </p>
             </div>
@@ -271,7 +271,7 @@ export default function AssistantsDashboard({
               id="dash-quick-dialog-btn"
             >
               <LucideIcon name="MessageSquare" size={12} className="text-zinc-950 font-bold" />
-              <span>进入对话</span>
+              <span className="mobile-compact-button-label">进入对话</span>
             </button>
           )}
         </div>
@@ -319,7 +319,7 @@ export default function AssistantsDashboard({
 
             {/* Personality Description */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
+              <div className="field-heading flex items-center justify-between">
                 <label className="text-xs font-semibold text-zinc-400 flex items-center space-x-1">
                   <span>核心性格与身世设定 (Personality)</span>
                   <span className="text-rose-500">*</span>
@@ -339,7 +339,7 @@ export default function AssistantsDashboard({
 
             {/* Scenario Description */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
+              <div className="field-heading flex items-center justify-between">
                 <label className="text-xs font-semibold text-zinc-400">默认登场环境</label>
                 <span className="text-[10px] text-zinc-500">仅在对话未选择独立场景时使用</span>
               </div>
@@ -355,7 +355,7 @@ export default function AssistantsDashboard({
 
             {/* First Message */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
+              <div className="field-heading flex items-center justify-between">
                 <label className="text-xs font-semibold text-zinc-400 flex items-center space-x-1">
                   <span>第一句开场白 (First Message)</span>
                   <span className="text-rose-500">*</span>
@@ -375,7 +375,7 @@ export default function AssistantsDashboard({
 
             {/* Advanced System prompt Instructions */}
             <div className="space-y-2 border-t border-zinc-800/40 pt-4">
-              <div className="flex items-center justify-between">
+              <div className="field-heading flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <label className="text-xs font-semibold text-zinc-400">AI 角色专用高级扮演提示词 (System Instructions)</label>
                   <button
@@ -411,7 +411,7 @@ export default function AssistantsDashboard({
             )}
 
             {/* Footer Form buttons */}
-            <div className="pt-4 border-t border-zinc-800/40 flex items-center justify-between">
+            <div className="management-actions pt-4 border-t border-zinc-800/40">
               <div>
                 {!isCreatingNew && currentSelectedCharacter?.isCustom && (
                   <button
@@ -435,7 +435,7 @@ export default function AssistantsDashboard({
                 )}
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="management-actions-group">
                 {isCreatingNew && (
                   <button
                     type="button"

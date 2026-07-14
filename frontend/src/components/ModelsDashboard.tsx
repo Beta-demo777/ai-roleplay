@@ -530,7 +530,7 @@ export default function ModelsDashboard({
               </div>
 
               <div className="flex items-center space-x-2">
-                <div className="relative flex-1">
+                <div className="relative min-w-0 flex-1">
                   <input
                     type={showApiKey ? 'text' : 'password'}
                     placeholder={selectedProvider.hasApiKey ? '密钥已加密保存；留空表示不修改' : 'API Key（本地免鉴权服务可留空）'}
@@ -605,7 +605,7 @@ export default function ModelsDashboard({
                   value={apiUrl}
                   onChange={(e) => setApiUrl(e.target.value)}
                   onBlur={saveConnectionSettings}
-                  className="field-input flex-1 font-mono text-xs"
+                  className="field-input min-w-0 flex-1 font-mono text-xs"
                 />
                 <button
                   onClick={handleResetUrl}
@@ -857,9 +857,9 @@ export default function ModelsDashboard({
 
       {/* Add Platform Dialog */}
       {showAddProviderModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="responsive-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setShowAddProviderModal(false)} />
-          <div className="bg-[#1b1b1b] border border-zinc-800 rounded-xl max-w-md w-full p-5 relative z-10 shadow-2xl animate-fade-in">
+          <div className="responsive-modal-card bg-[#1b1b1b] border border-zinc-800 rounded-xl max-w-md w-full p-5 relative z-10 overflow-y-auto shadow-2xl animate-fade-in">
             <h3 className="text-sm font-bold text-zinc-200 mb-4 flex items-center space-x-2">
               <Plus className="w-4 h-4 text-cyan-400" />
               <span>添加自定义模型平台</span>

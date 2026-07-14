@@ -50,7 +50,7 @@ export default function UserProfileModal({ isOpen, onClose, profile, onSave }: U
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-xs"
+      className="responsive-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-xs"
       id="user-profile-modal-overlay"
     >
       {/* Backdrop */}
@@ -62,11 +62,11 @@ export default function UserProfileModal({ isOpen, onClose, profile, onSave }: U
 
       {/* Modal Card */}
       <div
-        className="relative bg-zinc-900 border border-zinc-800 text-zinc-100 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300"
+        className="responsive-modal-card relative bg-zinc-900 border border-zinc-800 text-zinc-100 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300"
         id="profile-modal-card"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-950/50">
-          <div className="flex items-center space-x-2">
+        <div className="responsive-modal-header flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-950/50">
+          <div className="responsive-modal-header-title flex items-center space-x-2">
             <div className="p-1.5 bg-cyan-500/10 rounded-lg text-cyan-500 border border-cyan-500/20">
               <LucideIcon name="Settings" size={18} />
             </div>
@@ -82,7 +82,7 @@ export default function UserProfileModal({ isOpen, onClose, profile, onSave }: U
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="responsive-modal-body p-6 space-y-5 max-h-[80vh] overflow-y-auto">
           {/* Two column grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Left Column: Basic Bio Identifiers */}
@@ -153,7 +153,7 @@ export default function UserProfileModal({ isOpen, onClose, profile, onSave }: U
 
               {/* Persona Background Description */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
+                <div className="field-heading flex items-center justify-between">
                   <label className="text-xs font-semibold text-zinc-400">我的背景经历设定 (Bio)</label>
                   <span className="text-[9px] text-zinc-500">来历、目的或立场</span>
                 </div>
@@ -170,7 +170,7 @@ export default function UserProfileModal({ isOpen, onClose, profile, onSave }: U
           </div>
 
           {/* Footer Controls */}
-          <div className="pt-4 border-t border-zinc-800 flex items-center justify-end space-x-2">
+          <div className="responsive-modal-actions pt-4 border-t border-zinc-800 flex items-center justify-end">
             <button
               type="button"
               onClick={onClose}

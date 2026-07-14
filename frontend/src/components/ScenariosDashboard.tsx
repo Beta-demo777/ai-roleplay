@@ -98,8 +98,8 @@ export default function ScenariosDashboard({characters, scenarios, onSaveScenari
 
       <main className="management-workspace">
         <header className="management-header">
-          <div><div className="flex items-center gap-2 text-sm font-semibold"><MapPinned size={15} className="text-cyan-400" />对话场景设定</div><p className="mt-0.5 text-[9px] text-zinc-600">定义故事发生的地点、氛围与世界规则</p></div>
-          {saved && <span className="text-xs text-emerald-400">已保存</span>}
+          <div><div className="flex items-center gap-2 text-sm font-semibold"><MapPinned size={15} className="text-cyan-400" />对话场景设定</div><p className="header-supporting-text mt-0.5 text-[9px] text-zinc-600">定义故事发生的地点、氛围与世界规则</p></div>
+          {saved && <span className="header-status-badge text-xs text-emerald-400">已保存</span>}
         </header>
         <form onSubmit={saveScenario} className="management-content space-y-5">
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -118,9 +118,9 @@ export default function ScenariosDashboard({characters, scenarios, onSaveScenari
           <Field label="剧情引子"><textarea value={draft.plotHooks} onChange={event => updateDraft('plotHooks', event.target.value)} rows={3} placeholder="可供角色主动提及的事件、秘密、冲突或话题线索" className="field-input resize-none" /></Field>
           <Field label="场景规则与边界"><textarea value={draft.sceneRules} onChange={event => updateDraft('sceneRules', event.target.value)} rows={3} placeholder="角色在此场景中应遵守的世界规则、行为限制和内容边界" className="field-input resize-none" /></Field>
           <Field label="场景补充提示词"><textarea value={draft.prompt} onChange={event => updateDraft('prompt', event.target.value)} rows={5} placeholder="注入对话 Prompt 的补充指令，例如叙事风格、信息披露节奏和场景演绎要求" className="field-input resize-none font-mono" /></Field>
-          <div className="flex items-center justify-between border-t border-zinc-800 pt-5">
+          <div className="management-actions border-t border-zinc-800 pt-5">
             <div>{draft.id && <button type="button" onClick={deleteScenario} className="ui-button-danger"><Trash2 size={13} />删除场景</button>}</div>
-            <div className="flex items-center gap-2">
+            <div className="management-actions-group">
               {draft.id && <button type="button" onClick={() => onStartConversation(draft)} className="ui-button-secondary border-cyan-500/25 text-cyan-400 hover:bg-cyan-500/10"><MessageSquare size={13} />使用此场景对话</button>}
               <button type="submit" className="ui-button-primary px-5"><Save size={13} />保存场景</button>
             </div>

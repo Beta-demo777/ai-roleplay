@@ -100,7 +100,7 @@ export default function CharacterModal({ isOpen, onClose, onSave, editingCharact
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-xs"
+      className="responsive-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-xs"
       id="character-modal-overlay"
     >
       {/* Backdrop */}
@@ -112,12 +112,12 @@ export default function CharacterModal({ isOpen, onClose, onSave, editingCharact
 
       {/* Modal Card */}
       <div
-        className="relative bg-zinc-900 border border-zinc-800 text-zinc-100 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300"
+        className="responsive-modal-card relative bg-zinc-900 border border-zinc-800 text-zinc-100 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300"
         id="character-modal-card"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-950/50">
-          <div className="flex items-center space-x-2">
+        <div className="responsive-modal-header flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-950/50">
+          <div className="responsive-modal-header-title flex items-center space-x-2">
             <div className="p-1.5 bg-cyan-500/10 rounded-lg text-cyan-500 border border-cyan-500/20">
               <LucideIcon name={editingCharacter ? 'Settings' : 'PlusCircle'} size={18} />
             </div>
@@ -134,7 +134,7 @@ export default function CharacterModal({ isOpen, onClose, onSave, editingCharact
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="responsive-modal-body p-6 space-y-4 max-h-[80vh] overflow-y-auto">
           {/* Top segment: Name and tagline */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
@@ -166,7 +166,7 @@ export default function CharacterModal({ isOpen, onClose, onSave, editingCharact
 
           {/* Personality Description */}
           <div className="space-y-1">
-            <div className="flex items-center justify-between">
+            <div className="field-heading flex items-center justify-between">
               <label className="text-xs font-semibold text-zinc-400">核心人格与身世设定 (Personality) <span className="text-red-500">*</span></label>
               <span className="text-[10px] text-zinc-500">性格特征、背景故事、说话口头禅等</span>
             </div>
@@ -183,7 +183,7 @@ export default function CharacterModal({ isOpen, onClose, onSave, editingCharact
 
           {/* Scenario Description */}
           <div className="space-y-1">
-            <div className="flex items-center justify-between">
+            <div className="field-heading flex items-center justify-between">
               <label className="text-xs font-semibold text-zinc-400">默认登场环境</label>
               <span className="text-[10px] text-zinc-500">仅在未选择独立对话场景时使用</span>
             </div>
@@ -199,7 +199,7 @@ export default function CharacterModal({ isOpen, onClose, onSave, editingCharact
 
           {/* First Message (The Greeting!) */}
           <div className="space-y-1">
-            <div className="flex items-center justify-between">
+            <div className="field-heading flex items-center justify-between">
               <label className="text-xs font-semibold text-zinc-400">第一句开场白 (First Message) <span className="text-red-500">*</span></label>
               <span className="text-[10px] text-zinc-500">非常关键！奠定对话气氛，使用 *描述动作*</span>
             </div>
@@ -216,7 +216,7 @@ export default function CharacterModal({ isOpen, onClose, onSave, editingCharact
 
           {/* Advanced prompt instruction builder */}
           <div className="space-y-2 border-t border-zinc-800 pt-4">
-            <div className="flex items-center justify-between">
+            <div className="field-heading flex items-center justify-between">
               <div className="flex items-center space-x-1.5">
                 <label className="text-xs font-semibold text-zinc-400">AI 角色专用高级扮演提示词 (System Instructions)</label>
                 <button
@@ -242,7 +242,7 @@ export default function CharacterModal({ isOpen, onClose, onSave, editingCharact
           </div>
 
           {/* Footer controls */}
-          <div className="pt-4 border-t border-zinc-800 flex items-center justify-end space-x-2">
+          <div className="responsive-modal-actions pt-4 border-t border-zinc-800 flex items-center justify-end">
             <button
               type="button"
               onClick={onClose}
