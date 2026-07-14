@@ -10,15 +10,16 @@
 /* ChatGPT Style Palette */
 :root {
   --bg-sidebar: #171717;
-  --bg-main: #212121;
+  --bg-main: #1f1f1f;
   --bg-chat-bubble: #2f2f2f;
   --text-primary: #ececec;
   --text-secondary: #b4b4b4;
   --border-color: #303030;
+  --workspace-header-height: 3rem;
 }
 
 body {
-  background-color: #212121;
+  background-color: var(--bg-main);
   color: #ececec;
   font-family: var(--font-sans);
   overflow-x: hidden;
@@ -72,18 +73,26 @@ body {
   flex: 1 1 0%;
   flex-direction: column;
   overflow: hidden;
-  background: #1f1f1f;
+  background: var(--bg-main);
+}
+
+.workspace-surface {
+  background: var(--bg-main);
 }
 
 .management-header {
   display: flex;
-  height: 3rem;
+  height: var(--workspace-header-height);
   flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid #303030;
   padding: 0 1.25rem;
   background: rgb(24 24 27 / 0.6);
+}
+
+.workspace-header-offset {
+  top: var(--workspace-header-height);
 }
 
 .management-content {

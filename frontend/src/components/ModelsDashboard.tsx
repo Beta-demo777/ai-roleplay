@@ -843,10 +843,15 @@ export default function ModelsDashboard({
           </div>
         </main>
       ) : (
-        <main className="management-workspace items-center justify-center p-6 text-center text-zinc-500" id="models-right-workspace-empty">
-          <CloudLightning className="w-12 h-12 text-zinc-700 mb-3 animate-pulse" />
-          <p className="text-sm font-medium text-zinc-400">暂无选中的模型平台</p>
-          <p className="text-xs text-zinc-600 mt-1 max-w-xs">请点击左侧列表的「添加」按钮创建您的自定义模型服务端点。</p>
+        <main className="management-workspace" id="models-right-workspace-empty">
+          <div className="management-header">
+            <span className="text-sm font-semibold text-zinc-300">模型服务</span>
+          </div>
+          <div className="flex flex-1 flex-col items-center justify-center p-6 text-center text-zinc-500">
+            <CloudLightning className="mb-3 h-12 w-12 animate-pulse text-zinc-700" />
+            <p className="text-sm font-medium text-zinc-400">暂无选中的模型平台</p>
+            <p className="mt-1 max-w-xs text-xs text-zinc-600">请点击左侧列表的「添加模型平台」按钮创建您的自定义模型服务端点。</p>
+          </div>
         </main>
       )}
 

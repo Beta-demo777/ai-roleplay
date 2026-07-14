@@ -992,7 +992,7 @@ ${conversationProfile.appearance ? `外貌外表：${conversationProfile.appeara
 
   return (
     <div
-      className="h-screen bg-[#212121] flex text-zinc-100 font-sans relative overflow-hidden"
+      className="workspace-surface h-screen flex text-zinc-100 font-sans relative overflow-hidden"
       id="app-root-container"
     >
       {/* 1. EXTREME LEFT VERTICAL NAVIGATION BAR */}
@@ -1158,10 +1158,10 @@ ${conversationProfile.appearance ? `外貌外表：${conversationProfile.appeara
                               }
                             }
                           }}
-                          className={`group w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs cursor-pointer transition-all duration-150 relative ${
+                          className={`management-list-item group flex items-center justify-between text-xs relative ${
                             isSelected
-                              ? 'bg-[#2f2f2f] text-zinc-100 font-medium border-l-2 border-cyan-500/80 pl-2.5'
-                              : 'text-zinc-400 hover:bg-[#212121]/60 hover:text-zinc-200'
+                              ? 'management-list-item--active font-medium'
+                              : ''
                           }`}
                           id={`sidebar-thread-${thread.id}`}
                         >
@@ -1253,7 +1253,7 @@ ${conversationProfile.appearance ? `外貌外表：${conversationProfile.appeara
               </div>
 
 
-              <div className="p-3 border-t border-[#303030]/40 bg-[#141414] mt-auto">
+              <div className="mt-auto border-t border-[#303030]/40 bg-[#171717] p-3">
                 <button
                   onClick={() => setActiveTab('personas')}
                   className="w-full flex items-center justify-between p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-850 border border-zinc-800/40 transition-all cursor-pointer group text-left"
@@ -1283,21 +1283,7 @@ ${conversationProfile.appearance ? `外貌外表：${conversationProfile.appeara
           )}
 
           {/* MAIN CHAT WORKSPACE SECTION */}
-          <main className="flex-1 flex flex-col h-screen overflow-hidden relative bg-[#212121]">
-            {/* If sidebar is fully collapsed, show a subtle floating hamburger button on the far left of the viewport */}
-            {!sidebarOpen && (
-              <div className="absolute top-2.5 left-4 z-20 md:block hidden">
-                <button
-                  onClick={() => setSidebarOpen(true)}
-                  className="p-2 bg-[#212121] border border-[#303030] text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
-                  title="展开侧边栏"
-                  id="sidebar-toggle-btn-floating"
-                >
-                  <LucideIcon name="PanelLeftOpen" size={17} />
-                </button>
-              </div>
-            )}
-
+          <main className="workspace-surface flex-1 flex flex-col h-screen overflow-hidden relative">
             {/* Chat area wrapper */}
             <div className="flex-1 h-full min-h-0 w-full">
               <ChatWorkspace
