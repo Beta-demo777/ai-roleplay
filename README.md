@@ -1,6 +1,28 @@
 # Aura AI 角色扮演
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CI](https://github.com/Beta-demo777/ai-roleplay/actions/workflows/ci.yml/badge.svg)](https://github.com/Beta-demo777/ai-roleplay/actions/workflows/ci.yml)
+
 Aura 是一个中文 AI 角色扮演应用。React 前端负责角色、会话和人设交互，Express 负责代理用户配置的 OpenAI-compatible 模型服务，FastAPI 提供 PostgreSQL 和 Redis 基础设施接口，Nginx 作为统一入口。
+
+## 技术栈
+
+- **前端**：React + Vite + TypeScript，Express 提供模型服务代理与静态服务
+- **后端**：FastAPI + SQLAlchemy + Alembic（数据库迁移）
+- **数据**：PostgreSQL 16 持久化角色/场景/人设/会话，Redis 7 缓存
+- **部署**：Nginx 统一入口，Docker Compose 一键编排
+
+## 项目结构
+
+```
+.
+├── frontend/          # React 应用与 Express 代理
+├── backend/           # FastAPI 服务与 Alembic 迁移
+├── nginx/             # Nginx 反向代理配置
+├── docker/            # PostgreSQL 本地数据目录
+├── docker-compose.yml # 一键编排
+└── .env.example       # 环境变量示例
+```
 
 ## 服务结构
 
@@ -20,7 +42,7 @@ Aura 是一个中文 AI 角色扮演应用。React 前端负责角色、会话�
    cp .env.example .env
    ```
 
-2. 编辑 `.env`，设置 PostgreSQL 凭据。模型密钥不写入 `.env`，而是在应用的“模型服务”页面中配置。
+2. 编辑 `.env`，设置 PostgreSQL 凭据。`.env.example` 列出了全部可用变量（访问密码、模型密钥加密、代理安全等），本地开发保持默认即可；模型密钥不写入 `.env`，而是在应用的“模型服务”页面中配置。
 
 3. 构建并启动：
 
@@ -70,6 +92,8 @@ npm run dev
 
 生产部署应分别设置随机的 `MODEL_CREDENTIAL_KEY` 和 `INTERNAL_SERVICE_TOKEN`。未设置 `MODEL_CREDENTIAL_KEY` 时会依次使用 `APP_SECRET_KEY`、PostgreSQL 密码派生加密密钥，以保持本地开发可运行；生产环境不建议依赖此回退行为。更换 `MODEL_CREDENTIAL_KEY` 前必须先重新保存已有模型密钥，否则旧密文将无法解密。
 
+`INTERNAL_SERVICE_TOKEN` 是 Express 代理与 FastAPI 之间共享的鉴权令牌，两边必须一致。本地开发默认 `aura-internal-local`（后端与前端默认值一致）；公开部署时在 `.env` 中设置同一个随机值即可，docker-compose 会自动注入到前端。
+
 本地开发默认允许访问局域网或 `host.docker.internal` 上的模型服务。公开部署时，建议在 `.env` 中设置 `ALLOW_PRIVATE_MODEL_HOSTS=false`，阻止模型代理访问私有网络；`API_RATE_LIMIT_PER_MINUTE` 控制每个客户端每分钟的 API 请求上限。云元数据等受保护地址始终会被拒绝。
 
 ## 静态检查与构建
@@ -96,3 +120,15 @@ cd backend
 ```
 
 GitHub Actions 会自动执行前端类型检查、代理安全测试、生产构建、后端状态 API 测试、Alembic SQL 生成和 Docker 镜像构建。
+
+## 贡献指南
+
+欢迎提交 Issue 与 Pull Request。请遵循以下约定：
+
+- 提交信息使用 [Conventional Commits](https://www.conventionalcommits.org/) 风格（如 `feat:`、`fix:`、`style:`、`docs:`）
+- 提交前在 `frontend` 运行 `npm run lint` 与 `npm test`，在 `backend` 运行单元测试
+- 较大的功能改动请先开 Issue 说明设计，再开始编码
+
+## 许可证
+
+[MIT](LICENSE) © 2026 Beta-demo777
